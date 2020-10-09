@@ -1,2 +1,2 @@
 # ALife
-A beautiful world of AI
+A wondrous world of AI
