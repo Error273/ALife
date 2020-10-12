@@ -30,6 +30,8 @@ class Window(QMainWindow):
 
         self.simulation_speed_box.valueChanged.connect(self.change_update_time)
 
+        self.minerals_amount_box.valueChanged.connect(self.change_mineral_frequency)
+        self.minerals_frequency = 10
         #  таймер необходим для того, чтобы правильно обновлять поле битвы. напрямую влияет на скорость симуляции.
         self.timer = QTimer()
         self.timer.timeout.connect(self.update)
@@ -38,18 +40,6 @@ class Window(QMainWindow):
         # карта со всеми объектами типо бактрий или минералов. Пока заполняем пустыми клетками
         # сразу присвиваем клеткам x и y, отрисовывать потом будем именно по ним.
         self.map = Map()
-
-        self.map.set_cell(10, 5, Bacteria(350, 100, (255, 255, 0)))
-        self.map.map_main[10][5].move = 'right'
-
-        self.map.set_cell(30, 5, Bacteria(350, 300, (0, 255, 255)))
-        self.map.map_main[30][5].move = 'left'
-
-        self.map.set_cell(20, 10, Bacteria(350, 400, (0, 255, 0)))
-        self.map.map_main[20][10].move = 'up'
-        self.map.set_cell(20, 20, Bacteria(350, 500, (0, 0, 255)))
-        self.map.map_main[20][20].move = 'down'
-
 
 
 
@@ -65,6 +55,9 @@ class Window(QMainWindow):
         self.update_time = self.simulation_speed_box.value()
         self.timer.start(self.update_time)
 
+    def change_mineral_frequency(self):
+        self.minerals_frequency = self.minerals_amount_box.value()
+
 
     def paintEvent(self, event):
         qp = QPainter()
@@ -77,12 +70,12 @@ class Window(QMainWindow):
         qp.setBrush(QColor(0, 0, 0))
         qp.drawLine(300, 0, 300, 600)
         if self.started:
-            self.map.update()
+            self.map.update(self.minerals_frequency)
         # отрисовываем карту
         map = self.map.get_map()
         for i in map:
             for cell in i:
-                if cell.__class__.__name__ != 'BaseCell':
+                if cell.name != 'BaseCell':
                     qp.setBrush(QColor(*cell.get_color()))
                     #  qpainter по умлочанию рисует границу квадрата, если нужно чтобы появилась "сетка",
                     #  закомментировать следующую строку

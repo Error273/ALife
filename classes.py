@@ -18,6 +18,7 @@ class BaseCell:
         self.x = x
         self.y = y
         self.color = color
+        self.name = 'BaseCell'  # "имя" класса. удобно, когда нужно узнать, кто находится на какой-то клетке
         self.updated = False
 
     def get_x(self):
@@ -51,7 +52,14 @@ class BaseCell:
 class Bacteria(BaseCell):
     def __init__(self, x, y, color):
         super().__init__(x, y, color)
-        self.move = ''
+
+        self.name = 'Bacteria'
+
+        self.energy = 50
+        #  куда сейчас смотрит клетка. 0 - вверх, 1 - вправо, 2 - вниз, 3 - влево
+        self.orientation = 0
+
+        self.move = 'up'
 
 
     def update(self, map1, i, j):
@@ -90,9 +98,31 @@ class Bacteria(BaseCell):
                     new_i -= 1
 
             #  если в предполагаемой координате никого нет, то можем двигаться
-            if map1[new_i][new_j].__class__.__name__ == 'BaseCell':
+            if map1[new_i][new_j].name == 'BaseCell':
                 self.x = 300 + new_j * CELL_SIZE
                 self.y = new_i * CELL_SIZE # координата рассчитывается на основе преполагаемого индекса
+                return new_i, new_j
+        return i, j
+
+
+class Mineral(BaseCell):
+    def __init__(self, x, y, color):
+        super().__init__(x, y, color)
+
+        self.name = 'Mineral'
+
+    def update(self, map1, i, j):
+        """Движение минерала заключается в том, что он всегда оседает на пол"""
+        if not self.updated:
+            self.updated = True
+            new_i, new_j = i, j
+            if i < 59:
+                new_i += 1
+            #  если в предполагаемой координате никого нет, то можем двигаться
+            if map1[new_i][new_j].name == 'BaseCell':
+
+                self.x = 300 + new_j * CELL_SIZE
+                self.y = new_i * CELL_SIZE
                 return new_i, new_j
         return i, j
 
@@ -103,7 +133,7 @@ class Map:
         self.map_main = [[BaseCell(i, j, WHITE) for j in range(0, WINDOW_HEIGHT, CELL_SIZE)]
                     for i in range(300, WINDOW_WIDTH, CELL_SIZE)]
 
-    def update(self):
+    def update(self, mineral_frequency):
         """Для того, чтобы бактерии двигались более плавно, необходимо было ввести им параметр updated.
         Без него получается так,что бактерии обновляются по несколько раз.
         Потом, после того, как мы обновили все клетки, нужно им заного дать возможность обновиться."""
@@ -117,9 +147,24 @@ class Map:
                 new_map[new_i][new_j] = cell
         self.map_main = new_map
 
+        self.generate_mineral(mineral_frequency)
+
         for line in self.map_main:
             for cell in line:
                 cell.set_updated(False)
+
+    def generate_mineral(self, frequency):
+        """Гинерируем минерал"""
+        if randint(0, 100) < frequency:
+            i, j = randint(30, 59), randint(0, 59)  # случайная позиция на карте
+            while self.map_main[i][j].name != 'BaseCell':
+                """ генерируем, пока не можем быть уверены, что
+                 на этой клетке никого нет"""
+                i, j = randint(30, 59), randint(0, 59)
+            x, y = 300 + j * CELL_SIZE, i * CELL_SIZE  # рассчитываем координаты
+            self.set_cell(i, j, Mineral(x, y, GREY))
+
+
 
     def set_cell(self, i, j, cell):
         #  установить на какую-то позицию на карте клетку
