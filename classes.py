@@ -1,15 +1,6 @@
 from constants import *
 from random import randint
-
-
-def pretty_print(map):
-    for i in map:
-        for j in i:
-            if j.__class__.__name__ == 'BaseCell':
-                print('-', end='')
-            else:
-                print('B', end='')
-        print()
+from pybrain.tools.shortcuts import buildNetwork
 
 
 class BaseCell:
@@ -39,7 +30,7 @@ class BaseCell:
     def set_color(self, color):
         self.color = color
 
-    def update(self, map, i, j):
+    def update(self, map, i, j, sun_map):
         return i, j
 
     def set_updated(self, flag: bool):
@@ -56,13 +47,14 @@ class Bacteria(BaseCell):
         self.name = 'Bacteria'
 
         self.energy = 50
+        #  ну тут понятно.
+        self.net = buildNetwork(1, 16, 4)
+
         #  куда сейчас смотрит клетка. 0 - вверх, 1 - вправо, 2 - вниз, 3 - влево
         self.orientation = 0
 
-        self.move = 'up'
 
-
-    def update(self, map1, i, j):
+    def update(self, map1, i, j, sun_map):
         """Карта нужна для того, чтобы дать клеткам возможность смотреть вокруг.
         i и j это координаты себя на этой самой карте. Вместо того, искать себя на этой карте двумя циклами,
         мы один раз идем циклом в методе update у самой карты и выдаем всем клеткам их позиции.
@@ -70,30 +62,32 @@ class Bacteria(BaseCell):
         Решение может быть немного сложное, но ничего лучшего я не придумал."""
 
         # --- НЕЙРОНКА
-        move = self.move
+        sun = sun_map[i]
+        output = list(self.net.activate([sun]))
+        self.orientation = output.index(max(output))
         # --- НЕЙРОНКА
 
         if not self.updated:
             self.updated = True
             new_i, new_j = i, j
 
-            if move == 'right':
+            if self.orientation == 1:
                 if j < len(map1[0]) - 1:
                     new_j += 1
                 else:
                     new_j = 0
 
-            elif move == 'left':
+            elif self.orientation == 3:
                 if j > 0:
                     new_j -= 1
                 else:
                     new_j = 59
 
-            elif move == 'down':
+            elif self.orientation == 2:
                 if i < 59:
                     new_i += 1
 
-            elif move == 'up':
+            elif self.orientation == 0:
                 if i > 0:
                     new_i -= 1
 
@@ -111,7 +105,7 @@ class Mineral(BaseCell):
 
         self.name = 'Mineral'
 
-    def update(self, map1, i, j):
+    def update(self, map1, i, j, sun_map):
         """Движение минерала заключается в том, что он всегда оседает на пол"""
         if not self.updated:
             self.updated = True
@@ -133,7 +127,7 @@ class Map:
         self.map_main = [[BaseCell(i, j, WHITE) for j in range(0, WINDOW_HEIGHT, CELL_SIZE)]
                     for i in range(300, WINDOW_WIDTH, CELL_SIZE)]
 
-    def update(self, mineral_frequency):
+    def update(self, mineral_frequency, sun_map):
         """Для того, чтобы бактерии двигались более плавно, необходимо было ввести им параметр updated.
         Без него получается так,что бактерии обновляются по несколько раз.
         Потом, после того, как мы обновили все клетки, нужно им заного дать возможность обновиться."""
@@ -141,8 +135,7 @@ class Map:
         for i in range(len(self.map_main)):
             for j in range(len(self.map_main[0])):
                 cell = self.map_main[i][j]
-                new_i, new_j = cell.update(self.map_main[:], i, j)
-                # new_map[i].insert(new_j, new_map[i].pop(j))
+                new_i, new_j = cell.update(self.map_main[:], i, j, sun_map)
                 new_map[i][j] = BaseCell(cell.x, cell.y, WHITE)
                 new_map[new_i][new_j] = cell
         self.map_main = new_map

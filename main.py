@@ -32,6 +32,9 @@ class Window(QMainWindow):
 
         self.minerals_amount_box.valueChanged.connect(self.change_mineral_frequency)
         self.minerals_frequency = 10
+
+        self.sun_amount_box.valueChanged.connect(self.change_sun_amount)
+        self.sun_amount = 40
         #  таймер необходим для того, чтобы правильно обновлять поле битвы. напрямую влияет на скорость симуляции.
         self.timer = QTimer()
         self.timer.timeout.connect(self.update)
@@ -40,6 +43,11 @@ class Window(QMainWindow):
         # карта со всеми объектами типо бактрий или минералов. Пока заполняем пустыми клетками
         # сразу присвиваем клеткам x и y, отрисовывать потом будем именно по ним.
         self.map = Map()
+        for i in range(1):
+            i, j = randint(0, 59), randint(0, 59)
+            while self.map.get_cell(i, j).name != 'BaseCell':
+                i, j = randint(0, 59), randint(0, 59)
+            self.map.set_cell(i, j, Bacteria(300 + j * CELL_SIZE, i * 10, (randint(0, 255), randint(0, 255), randint(0, 255))))
 
 
 
@@ -58,6 +66,9 @@ class Window(QMainWindow):
     def change_mineral_frequency(self):
         self.minerals_frequency = self.minerals_amount_box.value()
 
+    def change_sun_amount(self):
+        self.sun_amount = self.sun_amount_box.value()
+
 
     def paintEvent(self, event):
         qp = QPainter()
@@ -70,7 +81,16 @@ class Window(QMainWindow):
         qp.setBrush(QColor(0, 0, 0))
         qp.drawLine(300, 0, 300, 600)
         if self.started:
-            self.map.update(self.minerals_frequency)
+            """sun_map это одномерный массив с размером 60 элементов.
+            Каждый элемент обозначает кол-во энергии, которое можно получить за фотосинтез на уровне i, где i - это
+            номер элемента в списке sun_map. Это очень удобно тем, что можно задавать свои формулы распространения света.
+            Я использовал геометрическую прогрессию, где 0 < q < 1 """
+            sun_map = []
+            last_n = self.sun_amount
+            for i in range(60):
+                sun_map.append(last_n)
+                last_n = int(last_n * 0.9)
+            self.map.update(self.minerals_frequency, sun_map)
         # отрисовываем карту
         map = self.map.get_map()
         for i in map:
