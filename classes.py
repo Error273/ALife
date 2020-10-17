@@ -1,16 +1,19 @@
 from constants import *
 from random import randint
 from pybrain.tools.shortcuts import buildNetwork
+from pprint import pprint
 
 
 class BaseCell:
     """Базовый класс клетки."""
+
     def __init__(self, x, y, color):
         self.x = x
         self.y = y
         self.color = color
         self.name = 'BaseCell'  # "имя" класса. удобно, когда нужно узнать, кто находится на какой-то клетке
         self.updated = False
+        self.energy = 1
 
     def get_x(self):
         return self.x
@@ -39,6 +42,12 @@ class BaseCell:
     def get_updated(self):
         return self.updated
 
+    def get_energy(self):
+        return self.energy
+
+    def set_energy(self, energy):
+        self.energy = energy
+
 
 class Bacteria(BaseCell):
     def __init__(self, x, y, color):
@@ -48,11 +57,10 @@ class Bacteria(BaseCell):
 
         self.energy = 50
         #  ну тут понятно.
-        self.net = buildNetwork(1, 16, 4)
+        self.net = buildNetwork(17, 16, 16, 5)
 
         #  куда сейчас смотрит клетка. 0 - вверх, 1 - вправо, 2 - вниз, 3 - влево
         self.orientation = 0
-
 
     def update(self, map1, i, j, sun_map):
         """Карта нужна для того, чтобы дать клеткам возможность смотреть вокруг.
@@ -61,42 +69,159 @@ class Bacteria(BaseCell):
         Если клетка решила подвинуться, то двигаем ее в том же методе update у карты
         Решение может быть немного сложное, но ничего лучшего я не придумал."""
 
+
+
         # --- НЕЙРОНКА
+        # подготавливаем данные, приводим к общему виду.
         sun = sun_map[i]
-        output = list(self.net.activate([sun]))
-        self.orientation = output.index(max(output))
+        energy = self.energy / 100
+        temp_i, temp_j = i / 60, j / 60  # позиция на карте
+        orientation = self.orientation / 4  # куда сейчас смотрим
+        # что находится вокруг.
+        whats_around = [[0, 0, 0, 0],  # вверх
+                        [0, 0, 0, 0],  # низ
+                        [0, 0, 0, 0],  # право
+                        [0, 0, 0, 0]]  # лево
+        # может быть ничего, край карты, союзная клетка, чужая клетка. минералы считаются чужими клетками.
+        # ничего - 0, край - 1, союзник - 2, противник - 3
+        # копипаст, но ниче другого не сделаешь.
+        if i - 1 < 0:
+            whats_around[0][1] = 1
+        else:
+            up = map1[i - 1][j]
+            if up.name == 'BaseCell':
+                whats_around[0][0] = 1
+            elif up.name == 'Mineral':
+                whats_around[0][3] = 1
+            elif up.name == 'Bacteria':
+                #  выясняем, союзная ли перед нами клетка.
+                differences = 0
+                my_genome = self.get_genome()
+                other_genome = up.get_genome()
+                for k in range(len(my_genome)):
+                    if my_genome[k] != other_genome[k]:
+                        differences += 1
+                    if differences == RECOGNITION_TRESHOLD:
+                        break
+                if differences == RECOGNITION_TRESHOLD:
+                    whats_around[0][3] = 1
+                else:
+                    whats_around[0][2] = 1
+
+        if i + 1 > 59:
+            whats_around[1][1] = 1
+        else:
+            down = map1[i + 1][j]
+            if down.name == 'BaseCell':
+                whats_around[1][0] = 1
+            elif down.name == 'Mineral':
+                whats_around[1][3] = 1
+            elif down.name == 'Bacteria':
+                #  выясняем, союзная ли перед нами клетка.
+                differences = 0
+                my_genome = self.get_genome()
+                other_genome = down.get_genome()
+                for k in range(len(my_genome)):
+                    if my_genome[k] != other_genome[k]:
+                        differences += 1
+                    if differences == RECOGNITION_TRESHOLD:
+                        break
+                if differences == RECOGNITION_TRESHOLD:
+                    whats_around[1][3] = 1
+                else:
+                    whats_around[1][2] = 1
+
+        if j + 1 > 59:
+            whats_around[2][1] = 1
+        else:
+            right = map1[i][j + 1]
+            if right.name == 'BaseCell':
+                whats_around[2][0] = 1
+            elif right.name == 'Mineral':
+                whats_around[2][3] = 1
+            elif right.name == 'Bacteria':
+                #  выясняем, союзная ли перед нами клетка.
+                differences = 0
+                my_genome = self.get_genome()
+                other_genome = right.get_genome()
+                for k in range(len(my_genome)):
+                    if my_genome[k] != other_genome[k]:
+                        differences += 1
+                    if differences == RECOGNITION_TRESHOLD:
+                        break
+                if differences == RECOGNITION_TRESHOLD:
+                    whats_around[2][3] = 1
+                else:
+                    whats_around[2][2] = 1
+
+        if j - 1 < 0:
+            whats_around[3][1] = 1
+        else:
+            left = map1[i][j - 1]
+            if left.name == 'BaseCell':
+                whats_around[3][0] = 1
+            elif left.name == 'Mineral':
+                whats_around[3][3] = 1
+            elif left.name == 'Bacteria':
+                #  выясняем, союзная ли перед нами клетка.
+                differences = 0
+                my_genome = self.get_genome()
+                other_genome = left.get_genome()
+                for k in range(len(my_genome)):
+                    if my_genome[k] != other_genome[k]:
+                        differences += 1
+                    if differences == RECOGNITION_TRESHOLD:
+                        break
+                if differences == RECOGNITION_TRESHOLD:
+                    whats_around[3][3] = 1
+                else:
+                    whats_around[3][2] = 1
+
         # --- НЕЙРОНКА
 
-        if not self.updated:
-            self.updated = True
-            new_i, new_j = i, j
-
-            if self.orientation == 1:
-                if j < len(map1[0]) - 1:
-                    new_j += 1
+            if not self.updated:
+                output = list(self.net.activate([j for sub in whats_around for j in sub] + [sun]))
+                res = output.index(max(output))
+                self.energy -= 1
+                self.updated = True
+                new_i, new_j = i, j
+                if res == 4:
+                    self.energy += sun
+                    print(self.energy, sun)
                 else:
-                    new_j = 0
+                    self.orientation = res
+                    if self.orientation == 1:
+                        if j < len(map1[0]) - 1:
+                            new_j += 1
+                        else:
+                            new_j = 0
 
-            elif self.orientation == 3:
-                if j > 0:
-                    new_j -= 1
-                else:
-                    new_j = 59
+                    elif self.orientation == 3:
+                        if j > 0:
+                            new_j -= 1
+                        else:
+                            new_j = 59
 
-            elif self.orientation == 2:
-                if i < 59:
-                    new_i += 1
+                    elif self.orientation == 2:
+                        if i < 59:
+                            new_i += 1
 
-            elif self.orientation == 0:
-                if i > 0:
-                    new_i -= 1
+                    elif self.orientation == 0:
+                        if i > 0:
+                            new_i -= 1
 
-            #  если в предполагаемой координате никого нет, то можем двигаться
-            if map1[new_i][new_j].name == 'BaseCell':
-                self.x = 300 + new_j * CELL_SIZE
-                self.y = new_i * CELL_SIZE # координата рассчитывается на основе преполагаемого индекса
-                return new_i, new_j
+                    #  если в предполагаемой координате никого нет, то можем двигаться
+                    if map1[new_i][new_j].name == 'BaseCell':
+                        self.x = 300 + new_j * CELL_SIZE
+                        self.y = new_i * CELL_SIZE  # координата рассчитывается на основе преполагаемого индекса
+                        return new_i, new_j
         return i, j
+
+    def get_genome(self):
+        return self.net.params
+
+    def set_genome(self, genome):
+        self.net._setParameters(genome)
 
 
 class Mineral(BaseCell):
@@ -114,7 +239,6 @@ class Mineral(BaseCell):
                 new_i += 1
             #  если в предполагаемой координате никого нет, то можем двигаться
             if map1[new_i][new_j].name == 'BaseCell':
-
                 self.x = 300 + new_j * CELL_SIZE
                 self.y = new_i * CELL_SIZE
                 return new_i, new_j
@@ -125,12 +249,13 @@ class Map:
     def __init__(self):
         # создаем пустое поле с обычными фоновыми клетками
         self.map_main = [[BaseCell(i, j, WHITE) for j in range(0, WINDOW_HEIGHT, CELL_SIZE)]
-                    for i in range(300, WINDOW_WIDTH, CELL_SIZE)]
+                         for i in range(300, WINDOW_WIDTH, CELL_SIZE)]
 
     def update(self, mineral_frequency, sun_map):
         """Для того, чтобы бактерии двигались более плавно, необходимо было ввести им параметр updated.
         Без него получается так,что бактерии обновляются по несколько раз.
         Потом, после того, как мы обновили все клетки, нужно им заного дать возможность обновиться."""
+        # обновляем карту
         new_map = self.map_main[:]
         for i in range(len(self.map_main)):
             for j in range(len(self.map_main[0])):
@@ -140,24 +265,34 @@ class Map:
                 new_map[new_i][new_j] = cell
         self.map_main = new_map
 
+        # генерируем минерал
         self.generate_mineral(mineral_frequency)
 
+        # убиваем тех, у кого 0 энергии
+        for i in range(len(self.map_main)):
+            for j in range(len(self.map_main[0])):
+                cell = self.map_main[i][j]
+                if cell.get_energy() <= 0:
+                    self.set_cell(i, j, Mineral(cell.x, cell.y, GREY))
         for line in self.map_main:
             for cell in line:
                 cell.set_updated(False)
 
     def generate_mineral(self, frequency):
         """Гинерируем минерал"""
+        attempts = 5  # количество попыток генерации минералов.
+        # когда клеток становится слишком много и места просто нет, мы влетаем в вечный цикл.
+        # мы просто ограничиваем количество попыток.
         if randint(0, 100) < frequency:
-            i, j = randint(30, 59), randint(0, 59)  # случайная позиция на карте
-            while self.map_main[i][j].name != 'BaseCell':
+            i, j = randint(40, 59), randint(0, 59)  # случайная позиция на карте
+            while self.map_main[i][j].name != 'BaseCell' and attempts > 0:
                 """ генерируем, пока не можем быть уверены, что
                  на этой клетке никого нет"""
-                i, j = randint(30, 59), randint(0, 59)
-            x, y = 300 + j * CELL_SIZE, i * CELL_SIZE  # рассчитываем координаты
-            self.set_cell(i, j, Mineral(x, y, GREY))
-
-
+                i, j = randint(40, 59), randint(0, 59)
+                attempts -= 1
+            if attempts > 0:
+                x, y = 300 + j * CELL_SIZE, i * CELL_SIZE  # рассчитываем координаты
+                self.set_cell(i, j, Mineral(x, y, GREY))
 
     def set_cell(self, i, j, cell):
         #  установить на какую-то позицию на карте клетку

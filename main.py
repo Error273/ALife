@@ -48,6 +48,8 @@ class Window(QMainWindow):
             while self.map.get_cell(i, j).name != 'BaseCell':
                 i, j = randint(0, 59), randint(0, 59)
             self.map.set_cell(i, j, Bacteria(300 + j * CELL_SIZE, i * 10, (randint(0, 255), randint(0, 255), randint(0, 255))))
+        # self.map.set_cell(1, 20, Bacteria(500, 10, (255, 0, 0)))
+        # self.map.set_cell(2, 20, Bacteria(500, 20, (0, 255, 0)))
 
 
 
