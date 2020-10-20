@@ -35,6 +35,9 @@ class Window(QMainWindow):
 
         self.sun_amount_box.valueChanged.connect(self.change_sun_amount)
         self.sun_amount = 40
+
+        self.mutation_chance_box.valueChanged.connect(self.change_mutate_chance)
+        self.mutation_chance = 5
         #  таймер необходим для того, чтобы правильно обновлять поле битвы. напрямую влияет на скорость симуляции.
         self.timer = QTimer()
         self.timer.timeout.connect(self.update)
@@ -43,14 +46,11 @@ class Window(QMainWindow):
         # карта со всеми объектами типо бактрий или минералов. Пока заполняем пустыми клетками
         # сразу присвиваем клеткам x и y, отрисовывать потом будем именно по ним.
         self.map = Map()
-        for i in range(1):
+        for i in range(10):
             i, j = randint(0, 59), randint(0, 59)
             while self.map.get_cell(i, j).name != 'BaseCell':
                 i, j = randint(0, 59), randint(0, 59)
             self.map.set_cell(i, j, Bacteria(300 + j * CELL_SIZE, i * 10, (randint(0, 255), randint(0, 255), randint(0, 255))))
-        # self.map.set_cell(1, 20, Bacteria(500, 10, (255, 0, 0)))
-        # self.map.set_cell(2, 20, Bacteria(500, 20, (0, 255, 0)))
-
 
 
     def change_start_or_stop(self):
@@ -70,6 +70,9 @@ class Window(QMainWindow):
 
     def change_sun_amount(self):
         self.sun_amount = self.sun_amount_box.value()
+
+    def change_mutate_chance(self):
+        self.mutation_chance = self.mutation_chance_box.value()
 
 
     def paintEvent(self, event):
@@ -92,7 +95,7 @@ class Window(QMainWindow):
             for i in range(60):
                 sun_map.append(last_n)
                 last_n = int(last_n * 0.9)
-            self.map.update(self.minerals_frequency, sun_map)
+            self.map.update(self.minerals_frequency, sun_map, self.mutation_chance)
         # отрисовываем карту
         map = self.map.get_map()
         for i in map:

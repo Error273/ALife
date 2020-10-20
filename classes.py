@@ -1,7 +1,7 @@
 from constants import *
 from random import randint
 from pybrain.tools.shortcuts import buildNetwork
-from pprint import pprint
+
 
 
 class BaseCell:
@@ -54,10 +54,10 @@ class Bacteria(BaseCell):
         super().__init__(x, y, color)
 
         self.name = 'Bacteria'
-
+        #  важный параметр. при рождении бактерия появляется с 50 энергии, а их предок теряет эти 50 энергии.
         self.energy = 50
         #  ну тут понятно.
-        self.net = buildNetwork(17, 16, 16, 5)
+        self.net = buildNetwork(21, 16, 16, 5)
 
         #  куда сейчас смотрит клетка. 0 - вверх, 1 - вправо, 2 - вниз, 3 - влево
         self.orientation = 0
@@ -69,14 +69,12 @@ class Bacteria(BaseCell):
         Если клетка решила подвинуться, то двигаем ее в том же методе update у карты
         Решение может быть немного сложное, но ничего лучшего я не придумал."""
 
-
-
         # --- НЕЙРОНКА
         # подготавливаем данные, приводим к общему виду.
         sun = sun_map[i]
         energy = self.energy / 100
         temp_i, temp_j = i / 60, j / 60  # позиция на карте
-        orientation = self.orientation / 4  # куда сейчас смотрим
+        orientation = self.orientation / 3  # куда сейчас смотрим
         # что находится вокруг.
         whats_around = [[0, 0, 0, 0],  # вверх
                         [0, 0, 0, 0],  # низ
@@ -177,44 +175,50 @@ class Bacteria(BaseCell):
                 else:
                     whats_around[3][2] = 1
 
-        # --- НЕЙРОНКА
+            # --- НЕЙРОНКА
 
-            if not self.updated:
-                output = list(self.net.activate([j for sub in whats_around for j in sub] + [sun]))
-                res = output.index(max(output))
-                self.energy -= 1
-                self.updated = True
-                new_i, new_j = i, j
-                if res == 4:
-                    self.energy += sun
-                    print(self.energy, sun)
-                else:
-                    self.orientation = res
-                    if self.orientation == 1:
-                        if j < len(map1[0]) - 1:
-                            new_j += 1
-                        else:
-                            new_j = 0
+        if not self.updated:
+            output = list(self.net.activate([j for sub in whats_around for j in sub] + [sun, energy, temp_i,
+                                                                                        temp_j, orientation]))
+            res = output.index(max(output))
+            self.energy -= 1
+            self.updated = True
+            new_i, new_j = i, j
 
-                    elif self.orientation == 3:
-                        if j > 0:
-                            new_j -= 1
-                        else:
-                            new_j = 59
 
-                    elif self.orientation == 2:
-                        if i < 59:
-                            new_i += 1
+            # если команда на фотосинтез
+            if res == 4:
+                self.energy += sun
+                if self.energy > MAX_ENERGY: # ограничиваем максимальную энергию
+                    self.energy = MAX_ENERGY
 
-                    elif self.orientation == 0:
-                        if i > 0:
-                            new_i -= 1
+            else:
+                self.orientation = res
+                if self.orientation == 1:
+                    if j < len(map1[0]) - 1:
+                        new_j += 1
+                    else:
+                        new_j = 0
 
-                    #  если в предполагаемой координате никого нет, то можем двигаться
-                    if map1[new_i][new_j].name == 'BaseCell':
-                        self.x = 300 + new_j * CELL_SIZE
-                        self.y = new_i * CELL_SIZE  # координата рассчитывается на основе преполагаемого индекса
-                        return new_i, new_j
+                elif self.orientation == 3:
+                    if j > 0:
+                        new_j -= 1
+                    else:
+                        new_j = 59
+
+                elif self.orientation == 2:
+                    if i < 59:
+                        new_i += 1
+
+                elif self.orientation == 0:
+                    if i > 0:
+                        new_i -= 1
+
+                #  если в предполагаемой координате никого нет, то можем двигаться
+                if map1[new_i][new_j].name == 'BaseCell':
+                    self.x = 300 + new_j * CELL_SIZE
+                    self.y = new_i * CELL_SIZE  # координата рассчитывается на основе преполагаемого индекса
+                    return new_i, new_j
         return i, j
 
     def get_genome(self):
@@ -222,6 +226,9 @@ class Bacteria(BaseCell):
 
     def set_genome(self, genome):
         self.net._setParameters(genome)
+
+    def mutate(self, mutate_chance):
+        pass
 
 
 class Mineral(BaseCell):
@@ -251,7 +258,7 @@ class Map:
         self.map_main = [[BaseCell(i, j, WHITE) for j in range(0, WINDOW_HEIGHT, CELL_SIZE)]
                          for i in range(300, WINDOW_WIDTH, CELL_SIZE)]
 
-    def update(self, mineral_frequency, sun_map):
+    def update(self, mineral_frequency, sun_map, mutate_chance):
         """Для того, чтобы бактерии двигались более плавно, необходимо было ввести им параметр updated.
         Без него получается так,что бактерии обновляются по несколько раз.
         Потом, после того, как мы обновили все клетки, нужно им заного дать возможность обновиться."""
@@ -274,6 +281,30 @@ class Map:
                 cell = self.map_main[i][j]
                 if cell.get_energy() <= 0:
                     self.set_cell(i, j, Mineral(cell.x, cell.y, GREY))
+
+        # отпочковываем клетки
+        for i in range(len(self.map_main)):
+            for j in range(len(self.map_main[0])):
+                cell = self.map_main[i][j]
+                #  если энергии достаточно, отпочковываемся.
+                if cell.get_energy() > MAX_ENERGY - MAX_ENERGY / 4:
+                    cell.set_energy(cell.get_energy() - 50)
+                    new_i, new_j = i, j
+                    if i != 0 and self.get_cell(i - 1, j).name == 'BaseCell':
+                        new_i, new_j = i - 1, j
+                    elif i != 59 and self.get_cell(i + 1, j).name == 'BaseCell':
+                        new_i, new_j = i + 1, j
+                    elif j != 0 and self.get_cell(i, j - 1).name == 'BaseCell':
+                        new_i, new_j = i, j - 1
+                    elif j != 59 and self.get_cell(i, j + 1).name == 'BaseCell':
+                        new_i, new_j = i, j + 1
+                    else:  # если места не нашлось, то просто пропускаем клетку
+                        continue
+                    self.set_cell(new_i, new_j, Bacteria(300 + new_j * CELL_SIZE, new_i * 10,
+                                                 cell.get_color()))
+                    new_cell = self.map_main[new_i][new_j]
+                    new_cell.set_genome(cell.get_genome())
+                    new_cell.mutate(mutate_chance)
         for line in self.map_main:
             for cell in line:
                 cell.set_updated(False)
