@@ -8,6 +8,7 @@ from PyQt5.QtCore import QTimer
 from random import randint
 from constants import *
 from classes import *
+import time
 
 
 class Window(QMainWindow):
@@ -46,7 +47,7 @@ class Window(QMainWindow):
         # карта со всеми объектами типо бактрий или минералов. Пока заполняем пустыми клетками
         # сразу присвиваем клеткам x и y, отрисовывать потом будем именно по ним.
         self.map = Map()
-        for i in range(10):
+        for i in range(300):
             i, j = randint(0, 59), randint(0, 59)
             while self.map.get_cell(i, j).name != 'BaseCell':
                 i, j = randint(0, 59), randint(0, 59)
@@ -95,7 +96,10 @@ class Window(QMainWindow):
             for i in range(60):
                 sun_map.append(last_n)
                 last_n = int(last_n * 0.9)
+            #s_time = time.time()
             self.map.update(self.minerals_frequency, sun_map, self.mutation_chance)
+            #end_time = time.time() - s_time
+            #print(end_time, 'SECS')
         # отрисовываем карту
         map = self.map.get_map()
         for i in map:

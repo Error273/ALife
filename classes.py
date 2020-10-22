@@ -1,7 +1,32 @@
 from constants import *
 from random import randint
-from pybrain.tools.shortcuts import buildNetwork
+import numpy
+import time
 
+
+class neuralNetwork:
+    def __init__(self, inputnodes, hiddennodes, outputnodes):
+        self.inodes = inputnodes
+        self.hnodes = hiddennodes
+        self.onodes = outputnodes
+        self.wih = numpy.random.rand(self.hnodes, self.inodes)
+        self.who = numpy.random.rand(self.onodes, self.hnodes)
+        self.activation_function = lambda x: numpy.maximum(0, x)
+
+    def activate(self, inputs_list):
+        inputs = numpy.array(inputs_list, ndmin=2).T
+        hidden_inputs = numpy.dot(self.wih, inputs)
+        hidden_outputs = self.activation_function(hidden_inputs)
+        final_inputs = numpy.dot(self.who, hidden_outputs)
+        final_outputs = self.activation_function(final_inputs)
+        return final_outputs
+
+    def get_weights(self):
+        return self.wih, self.who
+
+    def set_weights(self, wih, who):
+        self.wih = wih
+        self.who = who
 
 
 class BaseCell:
@@ -57,7 +82,7 @@ class Bacteria(BaseCell):
         #  важный параметр. при рождении бактерия появляется с 50 энергии, а их предок теряет эти 50 энергии.
         self.energy = 50
         #  ну тут понятно.
-        self.net = buildNetwork(21, 16, 16, 5)
+        self.net = neuralNetwork(21, 16, 5)
 
         #  куда сейчас смотрит клетка. 0 - вверх, 1 - вправо, 2 - вниз, 3 - влево
         self.orientation = 0
@@ -69,127 +94,119 @@ class Bacteria(BaseCell):
         Если клетка решила подвинуться, то двигаем ее в том же методе update у карты
         Решение может быть немного сложное, но ничего лучшего я не придумал."""
 
-        # --- НЕЙРОНКА
-        # подготавливаем данные, приводим к общему виду.
-        sun = sun_map[i]
-        energy = self.energy / 100
-        temp_i, temp_j = i / 60, j / 60  # позиция на карте
-        orientation = self.orientation / 3  # куда сейчас смотрим
-        # что находится вокруг.
-        whats_around = [[0, 0, 0, 0],  # вверх
-                        [0, 0, 0, 0],  # низ
-                        [0, 0, 0, 0],  # право
-                        [0, 0, 0, 0]]  # лево
-        # может быть ничего, край карты, союзная клетка, чужая клетка. минералы считаются чужими клетками.
-        # ничего - 0, край - 1, союзник - 2, противник - 3
-        # копипаст, но ниче другого не сделаешь.
-        if i - 1 < 0:
-            whats_around[0][1] = 1
-        else:
-            up = map1[i - 1][j]
-            if up.name == 'BaseCell':
-                whats_around[0][0] = 1
-            elif up.name == 'Mineral':
-                whats_around[0][3] = 1
-            elif up.name == 'Bacteria':
-                #  выясняем, союзная ли перед нами клетка.
-                differences = 0
-                my_genome = self.get_genome()
-                other_genome = up.get_genome()
-                for k in range(len(my_genome)):
-                    if my_genome[k] != other_genome[k]:
-                        differences += 1
-                    if differences == RECOGNITION_TRESHOLD:
-                        break
-                if differences == RECOGNITION_TRESHOLD:
+        if not self.updated:
+            # --- НЕЙРОНКА
+            # подготавливаем данные, приводим к общему виду.
+            sun = sun_map[i]
+            energy = self.energy / 100
+            temp_i, temp_j = i / 60, j / 60  # позиция на карте
+            orientation = self.orientation / 3  # куда сейчас смотрим
+            # что находится вокруг.
+            whats_around = [[0, 0, 0, 0],  # вверх
+                            [0, 0, 0, 0],  # низ
+                            [0, 0, 0, 0],  # право
+                            [0, 0, 0, 0]]  # лево
+            # может быть ничего, край карты, союзная клетка, чужая клетка. минералы считаются чужими клетками.
+            # ничего - 0, край - 1, союзник - 2, противник - 3
+            # копипаст, но ниче другого не сделаешь.
+            if i - 1 < 0:
+                whats_around[0][1] = 1
+            else:
+                up = map1[i - 1][j]
+                if up.name == 'BaseCell':
+                    whats_around[0][0] = 1
+                elif up.name == 'Mineral':
                     whats_around[0][3] = 1
-                else:
-                    whats_around[0][2] = 1
+                elif up.name == 'Bacteria':
+                    differences = 0
+                    my_genome, other_genome = self.get_genome(), up.get_genome()
+                    for layer in range(2):  # 2 потому что 2 слоя
+                        for weight in range(len(my_genome[layer])):
+                            if my_genome[layer].flatten()[weight] != other_genome[layer].flatten()[weight]:
+                                differences += 1
+                            if differences == RECOGNITION_TRESHOLD:
+                                whats_around[0][3] = 1
+                                break
+                    else:
+                        whats_around[0][2] = 1
 
-        if i + 1 > 59:
-            whats_around[1][1] = 1
-        else:
-            down = map1[i + 1][j]
-            if down.name == 'BaseCell':
-                whats_around[1][0] = 1
-            elif down.name == 'Mineral':
-                whats_around[1][3] = 1
-            elif down.name == 'Bacteria':
-                #  выясняем, союзная ли перед нами клетка.
-                differences = 0
-                my_genome = self.get_genome()
-                other_genome = down.get_genome()
-                for k in range(len(my_genome)):
-                    if my_genome[k] != other_genome[k]:
-                        differences += 1
-                    if differences == RECOGNITION_TRESHOLD:
-                        break
-                if differences == RECOGNITION_TRESHOLD:
+            if i + 1 > 59:
+                whats_around[1][1] = 1
+            else:
+                down = map1[i + 1][j]
+                if down.name == 'BaseCell':
+                    whats_around[1][0] = 1
+                elif down.name == 'Mineral':
                     whats_around[1][3] = 1
-                else:
-                    whats_around[1][2] = 1
+                elif down.name == 'Bacteria':
+                    differences = 0
+                    my_genome, other_genome = self.get_genome(), down.get_genome()
+                    for layer in range(2):  # 2 потому что 2 слоя
+                        for weight in range(len(my_genome[layer])):
+                            if my_genome[layer].flatten()[weight] != other_genome[layer].flatten()[weight]:
+                                differences += 1
+                            if differences == RECOGNITION_TRESHOLD:
+                                whats_around[1][3] = 1
+                                break
+                    else:
+                        whats_around[1][2] = 1
 
-        if j + 1 > 59:
-            whats_around[2][1] = 1
-        else:
-            right = map1[i][j + 1]
-            if right.name == 'BaseCell':
-                whats_around[2][0] = 1
-            elif right.name == 'Mineral':
-                whats_around[2][3] = 1
-            elif right.name == 'Bacteria':
-                #  выясняем, союзная ли перед нами клетка.
-                differences = 0
-                my_genome = self.get_genome()
-                other_genome = right.get_genome()
-                for k in range(len(my_genome)):
-                    if my_genome[k] != other_genome[k]:
-                        differences += 1
-                    if differences == RECOGNITION_TRESHOLD:
-                        break
-                if differences == RECOGNITION_TRESHOLD:
+            if j + 1 > 59:
+                whats_around[2][1] = 1
+            else:
+                right = map1[i][j + 1]
+                if right.name == 'BaseCell':
+                    whats_around[2][0] = 1
+                elif right.name == 'Mineral':
                     whats_around[2][3] = 1
-                else:
-                    whats_around[2][2] = 1
-
-        if j - 1 < 0:
-            whats_around[3][1] = 1
-        else:
-            left = map1[i][j - 1]
-            if left.name == 'BaseCell':
-                whats_around[3][0] = 1
-            elif left.name == 'Mineral':
-                whats_around[3][3] = 1
-            elif left.name == 'Bacteria':
-                #  выясняем, союзная ли перед нами клетка.
-                differences = 0
-                my_genome = self.get_genome()
-                other_genome = left.get_genome()
-                for k in range(len(my_genome)):
-                    if my_genome[k] != other_genome[k]:
-                        differences += 1
-                    if differences == RECOGNITION_TRESHOLD:
-                        break
-                if differences == RECOGNITION_TRESHOLD:
+                elif right.name == 'Bacteria':
+                    differences = 0
+                    my_genome, other_genome = self.get_genome(), right.get_genome()
+                    for layer in range(2):  # 2 потому что 2 слоя
+                        for weight in range(len(my_genome[layer])):
+                            if my_genome[layer].flatten()[weight] != other_genome[layer].flatten()[weight]:
+                                differences += 1
+                            if differences == RECOGNITION_TRESHOLD:
+                                whats_around[2][3] = 1
+                                break
+                    else:
+                        whats_around[2][2] = 1
+            #
+            if j - 1 < 0:
+                whats_around[3][1] = 1
+            else:
+                left = map1[i][j - 1]
+                if left.name == 'BaseCell':
+                    whats_around[3][0] = 1
+                elif left.name == 'Mineral':
                     whats_around[3][3] = 1
-                else:
-                    whats_around[3][2] = 1
+                elif left.name == 'Bacteria':
+                    #  выясняем, союзная ли перед нами клетка.
+                    differences = 0
+                    my_genome, other_genome = self.get_genome(), left.get_genome()
+                    for layer in range(2):  # 2 потому что 2 слоя
+                        for weight in range(len(my_genome[layer])):
+                            if my_genome[layer].flatten()[weight] != other_genome[layer].flatten()[weight]:
+                                differences += 1
+                            if differences == RECOGNITION_TRESHOLD:
+                                whats_around[3][3] = 1
+                                break
+                    else:
+                        whats_around[3][2] = 1
 
             # --- НЕЙРОНКА
-
-        if not self.updated:
             output = list(self.net.activate([j for sub in whats_around for j in sub] + [sun, energy, temp_i,
                                                                                         temp_j, orientation]))
             res = output.index(max(output))
+            # res = randint(0, 5)
             self.energy -= 1
             self.updated = True
             new_i, new_j = i, j
 
-
             # если команда на фотосинтез
             if res == 4:
                 self.energy += sun
-                if self.energy > MAX_ENERGY: # ограничиваем максимальную энергию
+                if self.energy > MAX_ENERGY:  # ограничиваем максимальную энергию
                     self.energy = MAX_ENERGY
 
             else:
@@ -222,10 +239,10 @@ class Bacteria(BaseCell):
         return i, j
 
     def get_genome(self):
-        return self.net.params
+        return self.net.get_weights()
 
-    def set_genome(self, genome):
-        self.net._setParameters(genome)
+    def set_genome(self, win, who):
+        self.net.set_weights(win, who)
 
     def mutate(self, mutate_chance):
         pass
@@ -263,6 +280,7 @@ class Map:
         Без него получается так,что бактерии обновляются по несколько раз.
         Потом, после того, как мы обновили все клетки, нужно им заного дать возможность обновиться."""
         # обновляем карту
+        s = time.time()
         new_map = self.map_main[:]
         for i in range(len(self.map_main)):
             for j in range(len(self.map_main[0])):
@@ -271,6 +289,7 @@ class Map:
                 new_map[i][j] = BaseCell(cell.x, cell.y, WHITE)
                 new_map[new_i][new_j] = cell
         self.map_main = new_map
+        print(time.time() - s)
 
         # генерируем минерал
         self.generate_mineral(mineral_frequency)
@@ -301,9 +320,9 @@ class Map:
                     else:  # если места не нашлось, то просто пропускаем клетку
                         continue
                     self.set_cell(new_i, new_j, Bacteria(300 + new_j * CELL_SIZE, new_i * 10,
-                                                 cell.get_color()))
+                                                         cell.get_color()))
                     new_cell = self.map_main[new_i][new_j]
-                    new_cell.set_genome(cell.get_genome())
+                    new_cell.set_genome(*cell.get_genome())
                     new_cell.mutate(mutate_chance)
         for line in self.map_main:
             for cell in line:
