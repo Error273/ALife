@@ -47,7 +47,7 @@ class Window(QMainWindow):
         # карта со всеми объектами типо бактрий или минералов. Пока заполняем пустыми клетками
         # сразу присвиваем клеткам x и y, отрисовывать потом будем именно по ним.
         self.map = Map()
-        for i in range(300):
+        for i in range(1000):
             i, j = randint(0, 59), randint(0, 59)
             while self.map.get_cell(i, j).name != 'BaseCell':
                 i, j = randint(0, 59), randint(0, 59)
@@ -96,10 +96,9 @@ class Window(QMainWindow):
             for i in range(60):
                 sun_map.append(last_n)
                 last_n = int(last_n * 0.9)
-            #s_time = time.time()
             self.map.update(self.minerals_frequency, sun_map, self.mutation_chance)
-            #end_time = time.time() - s_time
-            #print(end_time, 'SECS')
+
+            self.age_label.setText(f'Прошло ходов: {self.map.get_age()}')
         # отрисовываем карту
         map = self.map.get_map()
         for i in map:
@@ -108,7 +107,7 @@ class Window(QMainWindow):
                     qp.setBrush(QColor(*cell.get_color()))
                     #  qpainter по умлочанию рисует границу квадрата, если нужно чтобы появилась "сетка",
                     #  закомментировать следующую строку
-                    qp.setPen(QPen(QColor(*cell.get_color())))
+                    #qp.setPen(QPen(QColor(*cell.get_color())))
 
                     qp.drawRect(cell.get_x(), cell.get_y(), CELL_SIZE, CELL_SIZE)
 

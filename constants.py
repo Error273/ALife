@@ -6,4 +6,5 @@ WHITE = (255, 255, 255)
 GREY = (120, 120, 120)
 
 MAX_ENERGY = 100
-RECOGNITION_TRESHOLD = 2  # сколько необходимо различий в геноме для считания клетки враждебной
+MINERAL_ENERGY = 30
+CELL_AGE = 200

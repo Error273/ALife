@@ -1,10 +1,10 @@
 from constants import *
-from random import randint
+from random import randint, uniform
 import numpy
 import time
 
 
-class neuralNetwork:
+class NeuralNetwork:
     def __init__(self, inputnodes, hiddennodes, outputnodes):
         self.inodes = inputnodes
         self.hnodes = hiddennodes
@@ -39,6 +39,7 @@ class BaseCell:
         self.name = 'BaseCell'  # "имя" класса. удобно, когда нужно узнать, кто находится на какой-то клетке
         self.updated = False
         self.energy = 1
+        self.age = 0
 
     def get_x(self):
         return self.x
@@ -59,7 +60,7 @@ class BaseCell:
         self.color = color
 
     def update(self, map, i, j, sun_map):
-        return i, j
+        return i, j, False
 
     def set_updated(self, flag: bool):
         self.updated = flag
@@ -73,6 +74,9 @@ class BaseCell:
     def set_energy(self, energy):
         self.energy = energy
 
+    def get_age(self):
+        return self.age
+
 
 class Bacteria(BaseCell):
     def __init__(self, x, y, color):
@@ -82,19 +86,24 @@ class Bacteria(BaseCell):
         #  важный параметр. при рождении бактерия появляется с 50 энергии, а их предок теряет эти 50 энергии.
         self.energy = 50
         #  ну тут понятно.
-        self.net = neuralNetwork(21, 16, 5)
+        self.net = NeuralNetwork(21, 16, 6)
 
         #  куда сейчас смотрит клетка. 0 - вверх, 1 - вправо, 2 - вниз, 3 - влево
         self.orientation = 0
+
 
     def update(self, map1, i, j, sun_map):
         """Карта нужна для того, чтобы дать клеткам возможность смотреть вокруг.
         i и j это координаты себя на этой самой карте. Вместо того, искать себя на этой карте двумя циклами,
         мы один раз идем циклом в методе update у самой карты и выдаем всем клеткам их позиции.
         Если клетка решила подвинуться, то двигаем ее в том же методе update у карты
-        Решение может быть немного сложное, но ничего лучшего я не придумал."""
+        Решение может быть немного сложное, но ничего лучшего я не придумал.
+        Возвращаем новую позицию на карте и bool - съедаем мы клетку на данной позиции.
+        Если False, то мы передвигаемся на эту позицию. Если True - съедаем клетку на этой позиции."""
+
 
         if not self.updated:
+            self.age += 1
             # --- НЕЙРОНКА
             # подготавливаем данные, приводим к общему виду.
             sun = sun_map[i]
@@ -118,18 +127,14 @@ class Bacteria(BaseCell):
                 elif up.name == 'Mineral':
                     whats_around[0][3] = 1
                 elif up.name == 'Bacteria':
-                    differences = 0
-                    my_genome, other_genome = self.get_genome(), up.get_genome()
-                    for layer in range(2):  # 2 потому что 2 слоя
-                        for weight in range(len(my_genome[layer])):
-                            if my_genome[layer].flatten()[weight] != other_genome[layer].flatten()[weight]:
-                                differences += 1
-                            if differences == RECOGNITION_TRESHOLD:
-                                whats_around[0][3] = 1
-                                break
+                    test_data = [uniform(0, 1) for _ in range(21)]
+                    res1 = self.net.activate(test_data)
+                    res2 = up.net.activate(test_data)
+                    if all(res1 == res2):
+                        whats_around[0][3] = 1
                     else:
                         whats_around[0][2] = 1
-
+#
             if i + 1 > 59:
                 whats_around[1][1] = 1
             else:
@@ -139,18 +144,14 @@ class Bacteria(BaseCell):
                 elif down.name == 'Mineral':
                     whats_around[1][3] = 1
                 elif down.name == 'Bacteria':
-                    differences = 0
-                    my_genome, other_genome = self.get_genome(), down.get_genome()
-                    for layer in range(2):  # 2 потому что 2 слоя
-                        for weight in range(len(my_genome[layer])):
-                            if my_genome[layer].flatten()[weight] != other_genome[layer].flatten()[weight]:
-                                differences += 1
-                            if differences == RECOGNITION_TRESHOLD:
-                                whats_around[1][3] = 1
-                                break
+                    test_data = [uniform(0, 1) for _ in range(21)]
+                    res1 = self.net.activate(test_data)
+                    res2 = down.net.activate(test_data)
+                    if all(res1 == res2):
+                        whats_around[1][3] = 1
                     else:
                         whats_around[1][2] = 1
-
+#
             if j + 1 > 59:
                 whats_around[2][1] = 1
             else:
@@ -160,15 +161,11 @@ class Bacteria(BaseCell):
                 elif right.name == 'Mineral':
                     whats_around[2][3] = 1
                 elif right.name == 'Bacteria':
-                    differences = 0
-                    my_genome, other_genome = self.get_genome(), right.get_genome()
-                    for layer in range(2):  # 2 потому что 2 слоя
-                        for weight in range(len(my_genome[layer])):
-                            if my_genome[layer].flatten()[weight] != other_genome[layer].flatten()[weight]:
-                                differences += 1
-                            if differences == RECOGNITION_TRESHOLD:
-                                whats_around[2][3] = 1
-                                break
+                    test_data = [uniform(0, 1) for _ in range(21)]
+                    res1 = self.net.activate(test_data)
+                    res2 = right.net.activate(test_data)
+                    if all(res1 == res2):
+                        whats_around[2][3] = 1
                     else:
                         whats_around[2][2] = 1
             #
@@ -182,15 +179,11 @@ class Bacteria(BaseCell):
                     whats_around[3][3] = 1
                 elif left.name == 'Bacteria':
                     #  выясняем, союзная ли перед нами клетка.
-                    differences = 0
-                    my_genome, other_genome = self.get_genome(), left.get_genome()
-                    for layer in range(2):  # 2 потому что 2 слоя
-                        for weight in range(len(my_genome[layer])):
-                            if my_genome[layer].flatten()[weight] != other_genome[layer].flatten()[weight]:
-                                differences += 1
-                            if differences == RECOGNITION_TRESHOLD:
-                                whats_around[3][3] = 1
-                                break
+                    test_data = [uniform(0, 1) for _ in range(21)]
+                    res1 = self.net.activate(test_data)
+                    res2 = left.net.activate(test_data)
+                    if all(res1 == res2):
+                        whats_around[3][3] = 1
                     else:
                         whats_around[3][2] = 1
 
@@ -198,45 +191,38 @@ class Bacteria(BaseCell):
             output = list(self.net.activate([j for sub in whats_around for j in sub] + [sun, energy, temp_i,
                                                                                         temp_j, orientation]))
             res = output.index(max(output))
-            # res = randint(0, 5)
             self.energy -= 1
             self.updated = True
-            new_i, new_j = i, j
-
             # если команда на фотосинтез
+
             if res == 4:
                 self.energy += sun
                 if self.energy > MAX_ENERGY:  # ограничиваем максимальную энергию
                     self.energy = MAX_ENERGY
 
-            else:
+
+            elif res == 5: # если команда на съедение
+                new_i, new_j = self.get_i_j_by_orientation(map1, i, j)
+                if map1[new_i][new_j].name == 'Bacteria':
+                    print('B EATIEN')
+                    self.energy += map1[new_i][new_j].get_energy()
+                elif map1[new_i][new_j].name == 'Mineral':
+                    print('URAAAAAAAAAAA')
+                    self.energy += MINERAL_ENERGY
+                if self.energy > MAX_ENERGY:
+                    self.energy = MAX_ENERGY
+                return (new_i, new_j, True)
+
+
+            else: # если передвинемся
                 self.orientation = res
-                if self.orientation == 1:
-                    if j < len(map1[0]) - 1:
-                        new_j += 1
-                    else:
-                        new_j = 0
-
-                elif self.orientation == 3:
-                    if j > 0:
-                        new_j -= 1
-                    else:
-                        new_j = 59
-
-                elif self.orientation == 2:
-                    if i < 59:
-                        new_i += 1
-
-                elif self.orientation == 0:
-                    if i > 0:
-                        new_i -= 1
-
+                new_i, new_j = self.get_i_j_by_orientation(map1, i, j)
                 #  если в предполагаемой координате никого нет, то можем двигаться
                 if map1[new_i][new_j].name == 'BaseCell':
                     self.x = 300 + new_j * CELL_SIZE
                     self.y = new_i * CELL_SIZE  # координата рассчитывается на основе преполагаемого индекса
-                    return new_i, new_j
-        return i, j
+                    return (new_i, new_j, False)
+        return (i, j, False)
 
     def get_genome(self):
         return self.net.get_weights()
@@ -245,7 +231,38 @@ class Bacteria(BaseCell):
         self.net.set_weights(win, who)
 
     def mutate(self, mutate_chance):
-        pass
+        new_wih, new_who = self.net.get_weights()
+        new_wih, new_who = new_wih.flatten(), new_who.flatten()
+        for i in range(len(new_wih)):
+            if randint(0, 100) < mutate_chance:
+                new_wih[i] = uniform(0, 1)
+        for i in range(len(new_who)):
+            if randint(0, 100) < mutate_chance:
+                new_who[i] = uniform(0, 1)
+        self.net.set_weights(numpy.reshape(new_wih, (16, 21)), numpy.reshape(new_who, (6, 16)))
+
+    def get_i_j_by_orientation(self, map1, i, j):
+        new_i, new_j = i,j
+        if self.orientation == 1:
+            if j < len(map1[0]) - 1:
+                new_j += 1
+            else:
+                new_j = 0
+
+        elif self.orientation == 3:
+            if j > 0:
+                new_j -= 1
+            else:
+                new_j = 59
+
+        elif self.orientation == 2:
+            if i < 59:
+                new_i += 1
+
+        elif self.orientation == 0:
+            if i > 0:
+                new_i -= 1
+        return new_i, new_j
 
 
 class Mineral(BaseCell):
@@ -265,8 +282,8 @@ class Mineral(BaseCell):
             if map1[new_i][new_j].name == 'BaseCell':
                 self.x = 300 + new_j * CELL_SIZE
                 self.y = new_i * CELL_SIZE
-                return new_i, new_j
-        return i, j
+                return new_i, new_j, False
+        return i, j, False
 
 
 class Map:
@@ -274,20 +291,26 @@ class Map:
         # создаем пустое поле с обычными фоновыми клетками
         self.map_main = [[BaseCell(i, j, WHITE) for j in range(0, WINDOW_HEIGHT, CELL_SIZE)]
                          for i in range(300, WINDOW_WIDTH, CELL_SIZE)]
+        self.age = 0
 
     def update(self, mineral_frequency, sun_map, mutate_chance):
         """Для того, чтобы бактерии двигались более плавно, необходимо было ввести им параметр updated.
         Без него получается так,что бактерии обновляются по несколько раз.
         Потом, после того, как мы обновили все клетки, нужно им заного дать возможность обновиться."""
+        self.age += 1
         # обновляем карту
         s = time.time()
         new_map = self.map_main[:]
         for i in range(len(self.map_main)):
             for j in range(len(self.map_main[0])):
                 cell = self.map_main[i][j]
-                new_i, new_j = cell.update(self.map_main[:], i, j, sun_map)
-                new_map[i][j] = BaseCell(cell.x, cell.y, WHITE)
-                new_map[new_i][new_j] = cell
+                new_i, new_j, kill = cell.update(self.map_main[:], i, j, sun_map)
+                if not kill:
+                    new_map[i][j] = BaseCell(cell.x, cell.y, WHITE)
+                    new_map[new_i][new_j] = cell
+                else:
+                    new_map[i][j] = BaseCell(cell.x, cell.y, WHITE)
+
         self.map_main = new_map
         print(time.time() - s)
 
@@ -298,7 +321,7 @@ class Map:
         for i in range(len(self.map_main)):
             for j in range(len(self.map_main[0])):
                 cell = self.map_main[i][j]
-                if cell.get_energy() <= 0:
+                if cell.get_energy() <= 0 or cell.get_age() > CELL_AGE:
                     self.set_cell(i, j, Mineral(cell.x, cell.y, GREY))
 
         # отпочковываем клетки
@@ -356,3 +379,6 @@ class Map:
 
     def set_map(self, map):
         self.map_main = map
+
+    def get_age(self):
+        return self.age
