@@ -204,7 +204,6 @@ class Bacteria(BaseCell):
             elif res == 5: # если команда на съедение
                 new_i, new_j = self.get_i_j_by_orientation(map1, i, j)
                 if map1[new_i][new_j].name == 'Bacteria':
-                    print('B EATIEN')
                     self.energy += map1[new_i][new_j].get_energy()
                 elif map1[new_i][new_j].name == 'Mineral':
                     print('URAAAAAAAAAAA')
