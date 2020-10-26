@@ -5,28 +5,33 @@ import time
 
 
 class NeuralNetwork:
-    def __init__(self, inputnodes, hiddennodes, outputnodes):
+    def __init__(self, inputnodes, hiddennodes1, hiddennodes2, outputnodes):
         self.inodes = inputnodes
-        self.hnodes = hiddennodes
+        self.hnodes1 = hiddennodes1
+        self.hnodes2 = hiddennodes2
         self.onodes = outputnodes
-        self.wih = numpy.random.rand(self.hnodes, self.inodes)
-        self.who = numpy.random.rand(self.onodes, self.hnodes)
+        self.wih1 = numpy.random.rand(self.hnodes1, self.inodes)
+        self.wh1h2 = numpy.random.rand(self.hnodes2, self.hnodes1)
+        self.wh2o = numpy.random.rand(self.onodes, self.hnodes2)
         self.activation_function = lambda x: numpy.maximum(0, x)
 
     def activate(self, inputs_list):
         inputs = numpy.array(inputs_list, ndmin=2).T
-        hidden_inputs = numpy.dot(self.wih, inputs)
-        hidden_outputs = self.activation_function(hidden_inputs)
-        final_inputs = numpy.dot(self.who, hidden_outputs)
+        hidden_inputs1 = numpy.dot(self.wih1, inputs)
+        hidden_outputs1 = self.activation_function(hidden_inputs1)
+        hidden_inputs2 = numpy.dot(self.wh1h2, hidden_outputs1)
+        hidden_outputs2 = self.activation_function(hidden_inputs2)
+        final_inputs = numpy.dot(self.wh2o, hidden_outputs2)
         final_outputs = self.activation_function(final_inputs)
         return final_outputs
 
     def get_weights(self):
-        return self.wih, self.who
+        return self.wih1, self.wh1h2 , self.wh2o
 
-    def set_weights(self, wih, who):
-        self.wih = wih
-        self.who = who
+    def set_weights(self, wih1, wh1h2, wh2o):
+        self.wih1 = wih1
+        self.wh1h2 = wh1h2
+        self.wh2o = wh2o
 
 
 class BaseCell:
@@ -103,7 +108,7 @@ class Bacteria(BaseCell):
         #  важный параметр. при рождении бактерия появляется с 50 энергии, а их предок теряет эти 50 энергии.
         self.energy = 100
         #  ну тут понятно.
-        self.net = NeuralNetwork(21, 16, 6)
+        self.net = NeuralNetwork(21, 19, 19, 6)
 
         #  куда сейчас смотрит клетка. 0 - вверх, 1 - вправо, 2 - вниз, 3 - влево
         self.orientation = 1
@@ -248,19 +253,23 @@ class Bacteria(BaseCell):
     def get_genome(self):
         return self.net.get_weights()
 
-    def set_genome(self, win, who):
-        self.net.set_weights(win, who)
+    def set_genome(self, wih1, wh1h2, wh2o):
+        self.net.set_weights(wih1, wh1h2, wh2o)
 
     def mutate(self, mutate_chance):
-        new_wih, new_who = self.net.get_weights()
-        new_wih, new_who = new_wih.flatten(), new_who.flatten()
-        for i in range(len(new_wih)):
+        new_wih1, new_wh1h2, new_wh2o = self.net.get_weights()
+        new_wih1, new_wh1h2, new_wh2o = new_wih1.flatten(), new_wh1h2.flatten(), new_wh2o.flatten()
+        for i in range(len(new_wih1)):
             if randint(0, 100) < mutate_chance:
-                new_wih[i] = uniform(0, 1)
-        for i in range(len(new_who)):
+                new_wih1[i] = uniform(0, 1)
+        for i in range(len(new_wh1h2)):
             if randint(0, 100) < mutate_chance:
-                new_who[i] = uniform(0, 1)
-        self.net.set_weights(numpy.reshape(new_wih, (16, 21)), numpy.reshape(new_who, (6, 16)))
+                new_wh1h2[i] = uniform(0, 1)
+        for i in range(len(new_wh2o)):
+            if randint(0, 100) < mutate_chance:
+                new_wh2o[i] = uniform(0, 1)
+        self.net.set_weights(numpy.reshape(new_wih1, (19, 21)), numpy.reshape(new_wh1h2, (19, 19)),
+                             numpy.reshape(new_wh2o, (6, 19)))
 
     def get_i_j_by_orientation(self, map1, i, j):
         eaten_i, eaten_j = i, j
