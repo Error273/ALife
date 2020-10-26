@@ -35,7 +35,9 @@ class BaseCell:
     def __init__(self, x, y, color):
         self.x = x
         self.y = y
-        self.color = color
+        self.team_color = color
+        self.eating_color = [255, 255, 255]
+        self.current_color_mode = 0  # 0 - команды, 1 - предпочтительность
         self.name = 'BaseCell'  # "имя" класса. удобно, когда нужно узнать, кто находится на какой-то клетке
         self.updated = False
         self.energy = 1
@@ -48,16 +50,16 @@ class BaseCell:
         return self.y
 
     def get_color(self):
-        return self.color
+        if self.current_color_mode == 1:
+            return self.eating_color
+        else:
+            return self.team_color
 
     def set_x(self, x):
         self.x = x
 
     def set_y(self, y):
         self.y = y
-
-    def set_color(self, color):
-        self.color = color
 
     def update(self, map, i, j, sun_map):
         return i, j, False
@@ -77,6 +79,21 @@ class BaseCell:
     def get_age(self):
         return self.age
 
+    def switch_color(self):
+        if self.current_color_mode == 0:
+            self.current_color_mode = 1
+        else:
+            self.current_color_mode = 0
+
+    def get_team_color(self):
+        return self.team_color
+
+    def get_current_color_mode(self):
+        return self.current_color_mode
+
+    def set_current_color_mode(self, mode):
+        self.current_color_mode = mode
+
 
 class Bacteria(BaseCell):
     def __init__(self, x, y, color):
@@ -84,13 +101,12 @@ class Bacteria(BaseCell):
 
         self.name = 'Bacteria'
         #  важный параметр. при рождении бактерия появляется с 50 энергии, а их предок теряет эти 50 энергии.
-        self.energy = 50
+        self.energy = 100
         #  ну тут понятно.
         self.net = NeuralNetwork(21, 16, 6)
 
         #  куда сейчас смотрит клетка. 0 - вверх, 1 - вправо, 2 - вниз, 3 - влево
-        self.orientation = 0
-
+        self.orientation = 1
 
     def update(self, map1, i, j, sun_map):
         """Карта нужна для того, чтобы дать клеткам возможность смотреть вокруг.
@@ -101,9 +117,8 @@ class Bacteria(BaseCell):
         Возвращаем новую позицию на карте и bool - съедаем мы клетку на данной позиции.
         Если False, то мы передвигаемся на эту позицию. Если True - съедаем клетку на этой позиции."""
 
-
         if not self.updated:
-            self.age += 1
+            #self.age += 1
             # --- НЕЙРОНКА
             # подготавливаем данные, приводим к общему виду.
             sun = sun_map[i]
@@ -134,7 +149,7 @@ class Bacteria(BaseCell):
                         whats_around[0][3] = 1
                     else:
                         whats_around[0][2] = 1
-#
+            #
             if i + 1 > 59:
                 whats_around[1][1] = 1
             else:
@@ -151,7 +166,7 @@ class Bacteria(BaseCell):
                         whats_around[1][3] = 1
                     else:
                         whats_around[1][2] = 1
-#
+            #
             if j + 1 > 59:
                 whats_around[2][1] = 1
             else:
@@ -192,28 +207,35 @@ class Bacteria(BaseCell):
                                                                                         temp_j, orientation]))
             res = output.index(max(output))
             self.energy -= 1
+            #res = 5
             self.updated = True
-            # если команда на фотосинтез
 
+            # если команда на фотосинтез
             if res == 4:
+                if self.eating_color[0] - 10 > 0 and self.eating_color[2] - 10 > 0:
+                    self.eating_color[0] -= 10
+                    self.eating_color[2] -= 10
                 self.energy += sun
                 if self.energy > MAX_ENERGY:  # ограничиваем максимальную энергию
                     self.energy = MAX_ENERGY
 
 
-            elif res == 5: # если команда на съедение
+            elif res == 5:  # если команда на съедение
+                if self.eating_color[1] - 10 > 0 and self.eating_color[2] - 10 > 0:
+                   self.eating_color[1] -= 10
+                   self.eating_color[2] -= 10
+                #self.eating_color = [255, 0, 0]
                 new_i, new_j = self.get_i_j_by_orientation(map1, i, j)
                 if map1[new_i][new_j].name == 'Bacteria':
                     self.energy += map1[new_i][new_j].get_energy()
                 elif map1[new_i][new_j].name == 'Mineral':
-                    print('URAAAAAAAAAAA')
                     self.energy += MINERAL_ENERGY
                 if self.energy > MAX_ENERGY:
                     self.energy = MAX_ENERGY
                 return (new_i, new_j, True)
 
 
-            else: # если передвинемся
+            else:  # если передвинемся
                 self.orientation = res
                 new_i, new_j = self.get_i_j_by_orientation(map1, i, j)
                 #  если в предполагаемой координате никого нет, то можем двигаться
@@ -241,33 +263,33 @@ class Bacteria(BaseCell):
         self.net.set_weights(numpy.reshape(new_wih, (16, 21)), numpy.reshape(new_who, (6, 16)))
 
     def get_i_j_by_orientation(self, map1, i, j):
-        new_i, new_j = i,j
+        eaten_i, eaten_j = i, j
         if self.orientation == 1:
             if j < len(map1[0]) - 1:
-                new_j += 1
+                eaten_j += 1
             else:
-                new_j = 0
+                eaten_j = 0
 
         elif self.orientation == 3:
             if j > 0:
-                new_j -= 1
+                eaten_j -= 1
             else:
-                new_j = 59
+                eaten_j = 59
 
         elif self.orientation == 2:
             if i < 59:
-                new_i += 1
+                eaten_i += 1
 
         elif self.orientation == 0:
             if i > 0:
-                new_i -= 1
-        return new_i, new_j
+                eaten_i -= 1
+        return eaten_i, eaten_j
 
 
 class Mineral(BaseCell):
     def __init__(self, x, y, color):
         super().__init__(x, y, color)
-
+        self.eating_color = [*color]
         self.name = 'Mineral'
 
     def update(self, map1, i, j, sun_map):
@@ -304,11 +326,12 @@ class Map:
             for j in range(len(self.map_main[0])):
                 cell = self.map_main[i][j]
                 new_i, new_j, kill = cell.update(self.map_main[:], i, j, sun_map)
+                #print(i, j, new_i, new_j, kill)
                 if not kill:
                     new_map[i][j] = BaseCell(cell.x, cell.y, WHITE)
                     new_map[new_i][new_j] = cell
                 else:
-                    new_map[i][j] = BaseCell(cell.x, cell.y, WHITE)
+                    new_map[new_i][new_j] = BaseCell(cell.x, cell.y, WHITE)
 
         self.map_main = new_map
         print(time.time() - s)
@@ -330,7 +353,6 @@ class Map:
                 #  если энергии достаточно, отпочковываемся.
                 if cell.get_energy() > MAX_ENERGY - MAX_ENERGY / 4:
                     cell.set_energy(cell.get_energy() - 50)
-                    new_i, new_j = i, j
                     if i != 0 and self.get_cell(i - 1, j).name == 'BaseCell':
                         new_i, new_j = i - 1, j
                     elif i != 59 and self.get_cell(i + 1, j).name == 'BaseCell':
@@ -342,9 +364,10 @@ class Map:
                     else:  # если места не нашлось, то просто пропускаем клетку
                         continue
                     self.set_cell(new_i, new_j, Bacteria(300 + new_j * CELL_SIZE, new_i * 10,
-                                                         cell.get_color()))
+                                                         cell.get_team_color()))
                     new_cell = self.map_main[new_i][new_j]
                     new_cell.set_genome(*cell.get_genome())
+                    new_cell.set_current_color_mode(cell.get_current_color_mode())
                     new_cell.mutate(mutate_chance)
         for line in self.map_main:
             for cell in line:
@@ -365,6 +388,11 @@ class Map:
             if attempts > 0:
                 x, y = 300 + j * CELL_SIZE, i * CELL_SIZE  # рассчитываем координаты
                 self.set_cell(i, j, Mineral(x, y, GREY))
+
+    def switch_cells_color(self):
+        for line in self.map_main:
+            for cell in line:
+                cell.switch_color()
 
     def set_cell(self, i, j, cell):
         #  установить на какую-то позицию на карте клетку

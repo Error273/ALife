@@ -39,6 +39,10 @@ class Window(QMainWindow):
 
         self.mutation_chance_box.valueChanged.connect(self.change_mutate_chance)
         self.mutation_chance = 5
+
+        self.view_mode_box.addItem('Команды')
+        self.view_mode_box.addItem('Предпочтительность')
+        self.view_mode_box.currentTextChanged.connect(self.switch_view_mode)
         #  таймер необходим для того, чтобы правильно обновлять поле битвы. напрямую влияет на скорость симуляции.
         self.timer = QTimer()
         self.timer.timeout.connect(self.update)
@@ -47,7 +51,7 @@ class Window(QMainWindow):
         # карта со всеми объектами типо бактрий или минералов. Пока заполняем пустыми клетками
         # сразу присвиваем клеткам x и y, отрисовывать потом будем именно по ним.
         self.map = Map()
-        for i in range(1000):
+        for i in range(50):
             i, j = randint(0, 59), randint(0, 59)
             while self.map.get_cell(i, j).name != 'BaseCell':
                 i, j = randint(0, 59), randint(0, 59)
@@ -74,6 +78,9 @@ class Window(QMainWindow):
 
     def change_mutate_chance(self):
         self.mutation_chance = self.mutation_chance_box.value()
+
+    def switch_view_mode(self):
+        self.map.switch_cells_color()
 
 
     def paintEvent(self, event):
@@ -107,7 +114,7 @@ class Window(QMainWindow):
                     qp.setBrush(QColor(*cell.get_color()))
                     #  qpainter по умлочанию рисует границу квадрата, если нужно чтобы появилась "сетка",
                     #  закомментировать следующую строку
-                    #qp.setPen(QPen(QColor(*cell.get_color())))
+                    qp.setPen(QPen(QColor(*cell.get_color())))
 
                     qp.drawRect(cell.get_x(), cell.get_y(), CELL_SIZE, CELL_SIZE)
 
