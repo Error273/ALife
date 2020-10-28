@@ -173,6 +173,32 @@
      <string>Показ</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="save_sim_btn">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>360</y>
+      <width>181</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Сохранить симуляцию</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="load_sim_btn">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>400</y>
+      <width>181</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Загрузить симуляцию</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

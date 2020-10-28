@@ -9,6 +9,7 @@ from random import randint
 from constants import *
 from classes import *
 import time
+import pickle
 
 
 class Window(QMainWindow):
@@ -43,6 +44,9 @@ class Window(QMainWindow):
         self.view_mode_box.addItem('Команды')
         self.view_mode_box.addItem('Предпочтительность')
         self.view_mode_box.currentTextChanged.connect(self.switch_view_mode)
+
+        self.save_sim_btn.clicked.connect(self.save_sim)
+        self.load_sim_btn.clicked.connect(self.load_sim)
         #  таймер необходим для того, чтобы правильно обновлять поле битвы. напрямую влияет на скорость симуляции.
         self.timer = QTimer()
         self.timer.timeout.connect(self.update)
@@ -51,7 +55,7 @@ class Window(QMainWindow):
         # карта со всеми объектами типо бактрий или минералов. Пока заполняем пустыми клетками
         # сразу присвиваем клеткам x и y, отрисовывать потом будем именно по ним.
         self.map = Map()
-        for i in range(50):
+        for i in range(START_GENERATION):
             i, j = randint(0, 59), randint(0, 59)
             while self.map.get_cell(i, j).name != 'BaseCell':
                 i, j = randint(0, 59), randint(0, 59)
@@ -117,6 +121,14 @@ class Window(QMainWindow):
                     qp.setPen(QPen(QColor(*cell.get_color())))
 
                     qp.drawRect(cell.get_x(), cell.get_y(), CELL_SIZE, CELL_SIZE)
+
+    def save_sim(self):
+        with open('map.pickle', 'wb') as f:
+            pickle.dump(self.map, f)
+
+    def load_sim(self):
+        with open('map.pickle', 'rb') as f:
+            self.map = pickle.load(f)
 
 
 if __name__ == '__main__':

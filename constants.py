@@ -8,3 +8,5 @@ GREY = (120, 120, 120)
 MAX_ENERGY = 200
 MINERAL_ENERGY = 100
 CELL_AGE = 200
+
+START_GENERATION = 30 # начальное количество бактерий

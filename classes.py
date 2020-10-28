@@ -13,16 +13,15 @@ class NeuralNetwork:
         self.wih1 = numpy.random.rand(self.hnodes1, self.inodes)
         self.wh1h2 = numpy.random.rand(self.hnodes2, self.hnodes1)
         self.wh2o = numpy.random.rand(self.onodes, self.hnodes2)
-        self.activation_function = lambda x: numpy.maximum(0, x)
 
     def activate(self, inputs_list):
         inputs = numpy.array(inputs_list, ndmin=2).T
         hidden_inputs1 = numpy.dot(self.wih1, inputs)
-        hidden_outputs1 = self.activation_function(hidden_inputs1)
+        hidden_outputs1 = numpy.maximum(0, hidden_inputs1)
         hidden_inputs2 = numpy.dot(self.wh1h2, hidden_outputs1)
-        hidden_outputs2 = self.activation_function(hidden_inputs2)
+        hidden_outputs2 = numpy.maximum(0, hidden_inputs2)
         final_inputs = numpy.dot(self.wh2o, hidden_outputs2)
-        final_outputs = self.activation_function(final_inputs)
+        final_outputs = numpy.maximum(0, final_inputs)
         return final_outputs
 
     def get_weights(self):
