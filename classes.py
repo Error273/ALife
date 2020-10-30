@@ -1,7 +1,6 @@
 from constants import *
 from random import randint, uniform
 import numpy
-import time
 
 
 class NeuralNetwork:
@@ -25,7 +24,7 @@ class NeuralNetwork:
         return final_outputs
 
     def get_weights(self):
-        return self.wih1, self.wh1h2 , self.wh2o
+        return self.wih1, self.wh1h2, self.wh2o
 
     def set_weights(self, wih1, wh1h2, wh2o):
         self.wih1 = wih1
@@ -107,7 +106,7 @@ class Bacteria(BaseCell):
         #  важный параметр. при рождении бактерия появляется с 50 энергии, а их предок теряет эти 50 энергии.
         self.energy = 100
         #  ну тут понятно.
-        self.net = NeuralNetwork(21, 19, 19, 6)
+        self.net = NeuralNetwork(21, 19, 19, 7)
 
         #  куда сейчас смотрит клетка. 0 - вверх, 1 - вправо, 2 - вниз, 3 - влево
         self.orientation = 1
@@ -122,7 +121,7 @@ class Bacteria(BaseCell):
         Если False, то мы передвигаемся на эту позицию. Если True - съедаем клетку на этой позиции."""
 
         if not self.updated:
-            #self.age += 1
+            # self.age += 1
             # --- НЕЙРОНКА
             # подготавливаем данные, приводим к общему виду.
             sun = sun_map[i]
@@ -211,7 +210,7 @@ class Bacteria(BaseCell):
                                                                                         temp_j, orientation]))
             res = output.index(max(output))
             self.energy -= 1
-            #res = 5
+            # res = 5
             self.updated = True
 
             # если команда на фотосинтез
@@ -225,28 +224,32 @@ class Bacteria(BaseCell):
 
 
             elif res == 5:  # если команда на съедение
-                if self.eating_color[1] - 10 > 0 and self.eating_color[2] - 10 > 0:
-                   self.eating_color[1] -= 10
-                   self.eating_color[2] -= 10
-                #self.eating_color = [255, 0, 0]
                 new_i, new_j = self.get_i_j_by_orientation(map1, i, j)
                 if map1[new_i][new_j].name == 'Bacteria':
+                    if self.eating_color[1] - 20 > 0 and self.eating_color[2] - 20 > 0:
+                        self.eating_color[1] -= 20
+                        self.eating_color[2] -= 20
                     self.energy += map1[new_i][new_j].get_energy()
                 elif map1[new_i][new_j].name == 'Mineral':
+                    if self.eating_color[0] - 50 > 0 and self.eating_color[1] - 50 > 0:
+                        self.eating_color[0] -= 50
+                        self.eating_color[1] -= 50
                     self.energy += MINERAL_ENERGY
                 if self.energy > MAX_ENERGY:
                     self.energy = MAX_ENERGY
                 return (new_i, new_j, True)
 
-
-            else:  # если передвинемся
-                self.orientation = res
+            elif res == 6:  # если команда на передвижение
                 new_i, new_j = self.get_i_j_by_orientation(map1, i, j)
                 #  если в предполагаемой координате никого нет, то можем двигаться
                 if map1[new_i][new_j].name == 'BaseCell':
                     self.x = 300 + new_j * CELL_SIZE
                     self.y = new_i * CELL_SIZE  # координата рассчитывается на основе преполагаемого индекса
                     return (new_i, new_j, False)
+
+            else:  # если вращаемся
+                self.orientation = res
+
         return (i, j, False)
 
     def get_genome(self):
@@ -268,7 +271,7 @@ class Bacteria(BaseCell):
             if randint(0, 100) < mutate_chance:
                 new_wh2o[i] = uniform(0, 1)
         self.net.set_weights(numpy.reshape(new_wih1, (19, 21)), numpy.reshape(new_wh1h2, (19, 19)),
-                             numpy.reshape(new_wh2o, (6, 19)))
+                             numpy.reshape(new_wh2o, (7, 19)))
 
     def get_i_j_by_orientation(self, map1, i, j):
         eaten_i, eaten_j = i, j
@@ -328,13 +331,11 @@ class Map:
         Потом, после того, как мы обновили все клетки, нужно им заного дать возможность обновиться."""
         self.age += 1
         # обновляем карту
-        s = time.time()
         new_map = self.map_main[:]
         for i in range(len(self.map_main)):
             for j in range(len(self.map_main[0])):
                 cell = self.map_main[i][j]
                 new_i, new_j, kill = cell.update(self.map_main[:], i, j, sun_map)
-                #print(i, j, new_i, new_j, kill)
                 if not kill:
                     new_map[i][j] = BaseCell(cell.x, cell.y, WHITE)
                     new_map[new_i][new_j] = cell
@@ -342,7 +343,6 @@ class Map:
                     new_map[new_i][new_j] = BaseCell(cell.x, cell.y, WHITE)
 
         self.map_main = new_map
-        print(time.time() - s)
 
         # генерируем минерал
         self.generate_mineral(mineral_frequency)

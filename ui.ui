@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>900</width>
-    <height>600</height>
+    <height>607</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,116 +27,6 @@
      <string>Старт симуляции</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>1</x>
-      <y>96</y>
-      <width>164</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Скорость симуляции, мс</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_2">
-    <property name="geometry">
-     <rect>
-      <x>1</x>
-      <y>214</y>
-      <width>225</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Количество солнечной энергии</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_3">
-    <property name="geometry">
-     <rect>
-      <x>1</x>
-      <y>155</y>
-      <width>164</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Количество минералов</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_4">
-    <property name="geometry">
-     <rect>
-      <x>1</x>
-      <y>273</y>
-      <width>102</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Шанс мутации</string>
-    </property>
-   </widget>
-   <widget class="QSpinBox" name="simulation_speed_box">
-    <property name="geometry">
-     <rect>
-      <x>171</x>
-      <y>96</y>
-      <width>65</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="maximum">
-     <number>1000</number>
-    </property>
-    <property name="value">
-     <number>200</number>
-    </property>
-   </widget>
-   <widget class="QSpinBox" name="minerals_amount_box">
-    <property name="geometry">
-     <rect>
-      <x>171</x>
-      <y>155</y>
-      <width>48</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="value">
-     <number>10</number>
-    </property>
-   </widget>
-   <widget class="QSpinBox" name="sun_amount_box">
-    <property name="geometry">
-     <rect>
-      <x>242</x>
-      <y>214</y>
-      <width>48</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="minimum">
-     <number>1</number>
-    </property>
-    <property name="value">
-     <number>40</number>
-    </property>
-   </widget>
-   <widget class="QSpinBox" name="mutation_chance_box">
-    <property name="geometry">
-     <rect>
-      <x>110</x>
-      <y>270</y>
-      <width>48</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="value">
-     <number>5</number>
-    </property>
-   </widget>
    <widget class="QLabel" name="age_label">
     <property name="geometry">
      <rect>
@@ -150,54 +40,103 @@
      <string>Прошло ходов: 0</string>
     </property>
    </widget>
-   <widget class="QComboBox" name="view_mode_box">
-    <property name="geometry">
-     <rect>
-      <x>70</x>
-      <y>320</y>
-      <width>121</width>
-      <height>25</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_5">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>320</y>
-      <width>67</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Показ</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="save_sim_btn">
+   <widget class="QWidget" name="">
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>360</y>
-      <width>181</width>
-      <height>25</height>
+      <y>80</y>
+      <width>253</width>
+      <height>381</height>
      </rect>
     </property>
-    <property name="text">
-     <string>Сохранить симуляцию</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="load_sim_btn">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>400</y>
-      <width>181</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Загрузить симуляцию</string>
-    </property>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="4" column="0">
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>Показ</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0" colspan="4">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Количество солнечной энергии</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="4">
+      <widget class="QSpinBox" name="sun_amount_box">
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="value">
+        <number>40</number>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0" colspan="3">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Скорость симуляции, мс</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0" colspan="2">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>Шанс мутации</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0" colspan="3">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Количество минералов</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1" colspan="4">
+      <widget class="QComboBox" name="view_mode_box"/>
+     </item>
+     <item row="3" column="4">
+      <widget class="QSpinBox" name="mutation_chance_box">
+       <property name="value">
+        <number>5</number>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="4">
+      <widget class="QSpinBox" name="simulation_speed_box">
+       <property name="maximum">
+        <number>1000</number>
+       </property>
+       <property name="value">
+        <number>200</number>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="4">
+      <widget class="QSpinBox" name="minerals_amount_box">
+       <property name="value">
+        <number>10</number>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0" colspan="5">
+      <widget class="QPushButton" name="load_sim_btn">
+       <property name="text">
+        <string>Загрузить симуляцию</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0" colspan="5">
+      <widget class="QPushButton" name="save_sim_btn">
+       <property name="text">
+        <string>Сохранить симуляцию</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -206,7 +145,7 @@
      <x>0</x>
      <y>0</y>
      <width>900</width>
-     <height>22</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>
