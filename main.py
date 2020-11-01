@@ -1,14 +1,18 @@
+import pickle
 import sys
 
-from PyQt5.QtWidgets import QApplication, QWidget
-from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5 import uic  # Импортируем uic
-from PyQt5.QtGui import QPainter, QColor, QPen
 from PyQt5.QtCore import QTimer
-from random import randint
-from constants import *
+from PyQt5.QtGui import QPainter, QColor, QPen
+from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QFileDialog, QWidget
+from PyQt5 import QtCore, QtWidgets
+
+from windows import *
 from classes import *
-import pickle
+
+
+
 
 
 class Window(QMainWindow):
@@ -17,19 +21,39 @@ class Window(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        uic.loadUi('ui.ui', self)
+        uic.loadUi('main_ui.ui', self)
 
         #  устанавливаем фиксированный размер окна.
         self.setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT)
 
+        # создаем подсказки
+        self.speed_label.setToolTip('Через какое время в милисекундах будет обновляться симуляция')
+        self.simulation_speed_box.setToolTip('Через какое время в милисекундах будет обновляться симуляция')
+
+        self.minerals_label.setToolTip('Какая вероятность создания минерала каждое обновление экрана')
+        self.minerals_amount_box.setToolTip('Какая вероятность создания минерала каждое обновление экрана')
+
+        self.speed_label.setToolTip('Через какое время в милисекундах будет обновляться симуляция')
+        self.simulation_speed_box.setToolTip('Через какое время в милисекундах будет обновляться симуляция')
+
+        self.sun_label.setToolTip('Чем больше этот показатель - тем сильнее солнце светит и ниже проходит')
+        self.sun_amount_box.setToolTip('Чем больше этот показатель - тем сильнее солнце светит и ниже проходит')
+
+        self.mutation_label.setToolTip('С какой вероятнстью изменится вес нейросети при рождении')
+        self.mutation_chance_box.setToolTip('С какой вероятнстью изменится вес нейросети при рождении')
+
+        self.show_label.setToolTip('''Команды - какому роду принадлежит каждая бактерия. Предпочтительность - 
+        солнцееды зеленеют, мясоеды краснеют, а минералоеды синеют''')
+        self.view_mode_box.setToolTip('''Команды - какому роду принадлежит каждая бактерия. Предпочтительность - 
+        солнцееды зеленеют, мясоеды краснеют, а минералоеды синеют''')
+
         #  время, через которое обновляется экран, мс
+        self.simulation_speed_box.valueChanged.connect(self.change_update_time)
         self.update_time = 200
 
         # привязываем кнопочки
         self.start_or_stop_button.clicked.connect(self.change_start_or_stop)
         self.started = False
-
-        self.simulation_speed_box.valueChanged.connect(self.change_update_time)
 
         self.minerals_amount_box.valueChanged.connect(self.change_mineral_frequency)
         self.minerals_frequency = 10
@@ -46,12 +70,19 @@ class Window(QMainWindow):
 
         self.save_sim_btn.clicked.connect(self.save_sim)
         self.load_sim_btn.clicked.connect(self.load_sim)
-        #  таймер необходим для того, чтобы правильно обновлять поле битвы. напрямую влияет на скорость симуляции.
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update)
-        self.timer.start(1000)
 
-        # карта со всеми объектами типо бактрий или минералов. Пока заполняем пустыми клетками
+        self.start_simulation_btn.clicked.connect(self.start_simulation)
+        #  таймер необходим для того, чтобы правильно обновлять поле битвы. напрямую влияет на скорость симуляции.
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.repaint)
+
+        self.start_simulation()
+
+        self.timer.start(self.update_time)
+
+
+    def start_simulation(self):
+        # карта со всеми объектами типо бактрий или минералов.
         # сразу присвиваем клеткам x и y, отрисовывать потом будем именно по ним.
         self.map = Map()
         for i in range(START_GENERATION):
@@ -60,6 +91,7 @@ class Window(QMainWindow):
                 i, j = randint(0, 59), randint(0, 59)
             self.map.set_cell(i, j, Bacteria(300 + j * CELL_SIZE, i * 10,
                                              (randint(0, 255), randint(0, 255), randint(0, 255))))
+        self.history = [self.map.clone()]
 
     def change_start_or_stop(self):
         if not self.started:
@@ -86,17 +118,20 @@ class Window(QMainWindow):
         self.map.switch_cells_color()
 
     def paintEvent(self, event):
-        print('UPDATED', randint(0, 100))
         qp = QPainter()
         qp.begin(self)
-        self.update_field(qp)
+        self.update_field(qp, self.sender())
         qp.end()
 
-    def update_field(self, qp):
+    def update_field(self, qp, sender):
+        """sender принимаем для того, чтобы смотреть,от кого отправлен сигнал.
+        paintEvent почему то вызывается сам по себе и обновляет карту, а мне нужно чтобы
+         карта обновлялась только по таймеру.
+        """
         # рисуем линию - ограничитель
         qp.setBrush(QColor(0, 0, 0))
         qp.drawLine(300, 0, 300, 600)
-        if self.started:
+        if self.started and sender.__class__.__name__ == 'QTimer':
             """sun_map это одномерный массив с размером 60 элементов.
             Каждый элемент обозначает кол-во энергии, которое можно получить за фотосинтез на уровне i, где i - это
             номер элемента в списке sun_map. Это очень удобно тем, что можно задавать свои формулы распространения света.
@@ -107,27 +142,40 @@ class Window(QMainWindow):
                 sun_map.append(last_n)
                 last_n = int(last_n * 0.9)
             self.map.update(self.minerals_frequency, sun_map, self.mutation_chance)
-
+            self.history.append(self.map.clone())
             self.age_label.setText(f'Прошло ходов: {self.map.get_age()}')
         # отрисовываем карту
         map = self.map.get_map()
         for i in map:
             for cell in i:
+                # пустые клетки не отрисовываем
                 if cell.name != 'BaseCell':
                     qp.setBrush(QColor(*cell.get_color()))
-                    #  qpainter по умлочанию рисует границу квадрата, если нужно чтобы появилась "сетка",
-                    #  закомментировать следующую строку
                     qp.setPen(QPen(QColor(*cell.get_color())))
 
                     qp.drawRect(cell.get_x(), cell.get_y(), CELL_SIZE, CELL_SIZE)
 
     def save_sim(self):
-        with open('map.pickle', 'wb') as f:
-            pickle.dump(self.map, f)
+        path = QFileDialog.getSaveFileName(self, 'Сохранить симуляцию', '', 'Симуляция (*.sim)')[0]
+        with open(path, 'wb') as f:
+            pickle.dump(self.history, f)
+
 
     def load_sim(self):
-        with open('map.pickle', 'rb') as f:
-            self.map = pickle.load(f)
+        path = QFileDialog.getOpenFileName(self, 'Открыть симуляцию', '', 'Симуляция (*.sim)')[0]
+        if path:
+            OpenSimulationDialog(path, self)
+
+    def load_last_step(self, path):
+        with open(path, 'rb') as f:
+            self.history = pickle.load(f)
+            self.map = self.history[-1]
+
+
+    def load_history(self, path):
+        with open(path, 'rb') as f:
+            SimulationHistoryWindow(pickle.load(f), self)
+
 
 
 if __name__ == '__main__':

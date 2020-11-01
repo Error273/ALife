@@ -5,16 +5,27 @@ import numpy
 
 class NeuralNetwork:
     def __init__(self, inputnodes, hiddennodes1, hiddennodes2, outputnodes):
+        # всего использую 4 слоя. 1 вход, 2 скрытых, 1 выход.
+        # кол-во входных нейронов
         self.inodes = inputnodes
+        # первый скрытый слой
         self.hnodes1 = hiddennodes1
+        # второй скрытый слой
         self.hnodes2 = hiddennodes2
+        # выходной
         self.onodes = outputnodes
+        # веса вход - первый скрытый слой
         self.wih1 = numpy.random.rand(self.hnodes1, self.inodes)
+        # веса первый скрытый - второй скрытый
         self.wh1h2 = numpy.random.rand(self.hnodes2, self.hnodes1)
+        # веса второй скрытый - выход
         self.wh2o = numpy.random.rand(self.onodes, self.hnodes2)
 
     def activate(self, inputs_list):
+        # преобразуем вход в правильный вид
         inputs = numpy.array(inputs_list, ndmin=2).T
+        # по сути, все, что мы делаем дальше это перемножаем матрицы весов и результата, полученного на прошлом слое.
+        # так, мы умножаем матрицу весов и входные данные, подвергаем функции активации, получаем новые данные, повторяем.
         hidden_inputs1 = numpy.dot(self.wih1, inputs)
         hidden_outputs1 = numpy.maximum(0, hidden_inputs1)
         hidden_inputs2 = numpy.dot(self.wh1h2, hidden_outputs1)
@@ -38,13 +49,14 @@ class BaseCell:
     def __init__(self, x, y, color):
         self.x = x
         self.y = y
+        # цвет, который задается при создании и не может измениться. определяет, какому роду принадлежит клетка.
         self.team_color = color
+        # цвет, который определяется тем, что клетка ест.
         self.eating_color = [255, 255, 255]
         self.current_color_mode = 0  # 0 - команды, 1 - предпочтительность
         self.name = 'BaseCell'  # "имя" класса. удобно, когда нужно узнать, кто находится на какой-то клетке
         self.updated = False
         self.energy = 1
-        self.age = 0
 
     def get_x(self):
         return self.x
@@ -79,14 +91,8 @@ class BaseCell:
     def set_energy(self, energy):
         self.energy = energy
 
-    def get_age(self):
-        return self.age
-
     def switch_color(self):
-        if self.current_color_mode == 0:
-            self.current_color_mode = 1
-        else:
-            self.current_color_mode = 0
+        self.current_color_mode = not self.current_color_mode
 
     def get_team_color(self):
         return self.team_color
@@ -103,7 +109,7 @@ class Bacteria(BaseCell):
         super().__init__(x, y, color)
 
         self.name = 'Bacteria'
-        #  важный параметр. при рождении бактерия появляется с 50 энергии, а их предок теряет эти 50 энергии.
+        #  важный параметр. при рождении бактерия появляется с 100 энергии, а их предок теряет эти 100 энергии.
         self.energy = 100
         #  ну тут понятно.
         self.net = NeuralNetwork(21, 19, 19, 7)
@@ -121,8 +127,6 @@ class Bacteria(BaseCell):
         Если False, то мы передвигаемся на эту позицию. Если True - съедаем клетку на этой позиции."""
 
         if not self.updated:
-            # self.age += 1
-            # --- НЕЙРОНКА
             # подготавливаем данные, приводим к общему виду.
             sun = sun_map[i]
             energy = self.energy / 100
@@ -208,13 +212,13 @@ class Bacteria(BaseCell):
             # --- НЕЙРОНКА
             output = list(self.net.activate([j for sub in whats_around for j in sub] + [sun, energy, temp_i,
                                                                                         temp_j, orientation]))
+            # получаем индекс самого большого значения выходного слоя. он и будет решать, что делать клетке.
             res = output.index(max(output))
             self.energy -= 1
-            # res = 5
-            self.updated = True
 
             # если команда на фотосинтез
             if res == 4:
+                # "зеленеем"
                 if self.eating_color[0] - 10 > 0 and self.eating_color[2] - 10 > 0:
                     self.eating_color[0] -= 10
                     self.eating_color[2] -= 10
@@ -226,14 +230,18 @@ class Bacteria(BaseCell):
             elif res == 5:  # если команда на съедение
                 new_i, new_j = self.get_i_j_by_orientation(map1, i, j)
                 if map1[new_i][new_j].name == 'Bacteria':
+                    # "краснеем"
                     if self.eating_color[1] - 20 > 0 and self.eating_color[2] - 20 > 0:
                         self.eating_color[1] -= 20
                         self.eating_color[2] -= 20
+                    # получаем энергию съеденной клетки.
                     self.energy += map1[new_i][new_j].get_energy()
                 elif map1[new_i][new_j].name == 'Mineral':
+                    # "синеем"
                     if self.eating_color[0] - 50 > 0 and self.eating_color[1] - 50 > 0:
                         self.eating_color[0] -= 50
                         self.eating_color[1] -= 50
+                    # получаем энергию минералов.
                     self.energy += MINERAL_ENERGY
                 if self.energy > MAX_ENERGY:
                     self.energy = MAX_ENERGY
@@ -249,7 +257,7 @@ class Bacteria(BaseCell):
 
             else:  # если вращаемся
                 self.orientation = res
-
+        self.updated = True
         return (i, j, False)
 
     def get_genome(self):
@@ -259,8 +267,10 @@ class Bacteria(BaseCell):
         self.net.set_weights(wih1, wh1h2, wh2o)
 
     def mutate(self, mutate_chance):
+        # получаем веса
         new_wih1, new_wh1h2, new_wh2o = self.net.get_weights()
         new_wih1, new_wh1h2, new_wh2o = new_wih1.flatten(), new_wh1h2.flatten(), new_wh2o.flatten()
+        # проходимся по каждому весу и изменяем его на случайное число, если мутируем.
         for i in range(len(new_wih1)):
             if randint(0, 100) < mutate_chance:
                 new_wih1[i] = uniform(0, 1)
@@ -270,10 +280,12 @@ class Bacteria(BaseCell):
         for i in range(len(new_wh2o)):
             if randint(0, 100) < mutate_chance:
                 new_wh2o[i] = uniform(0, 1)
+        # возвращаем веса в нормальный вид и устанавливаем нейронке.
         self.net.set_weights(numpy.reshape(new_wih1, (19, 21)), numpy.reshape(new_wh1h2, (19, 19)),
                              numpy.reshape(new_wh2o, (7, 19)))
 
     def get_i_j_by_orientation(self, map1, i, j):
+        # функция для того, чтобы получить координаты того, что находится перед собой.
         eaten_i, eaten_j = i, j
         if self.orientation == 1:
             if j < len(map1[0]) - 1:
@@ -331,6 +343,7 @@ class Map:
         Потом, после того, как мы обновили все клетки, нужно им заного дать возможность обновиться."""
         self.age += 1
         # обновляем карту
+        #
         new_map = self.map_main[:]
         for i in range(len(self.map_main)):
             for j in range(len(self.map_main[0])):
@@ -351,7 +364,7 @@ class Map:
         for i in range(len(self.map_main)):
             for j in range(len(self.map_main[0])):
                 cell = self.map_main[i][j]
-                if cell.get_energy() <= 0 or cell.get_age() > CELL_AGE:
+                if cell.get_energy() <= 0:
                     self.set_cell(i, j, Mineral(cell.x, cell.y, GREY))
 
         # отпочковываем клетки
@@ -377,6 +390,8 @@ class Map:
                     new_cell.set_genome(*cell.get_genome())
                     new_cell.set_current_color_mode(cell.get_current_color_mode())
                     new_cell.mutate(mutate_chance)
+                    cell.set_energy(cell.get_energy() - 100)
+        # заного даем всем обновиться
         for line in self.map_main:
             for cell in line:
                 cell.set_updated(False)
@@ -398,6 +413,7 @@ class Map:
                 self.set_cell(i, j, Mineral(x, y, GREY))
 
     def switch_cells_color(self):
+        # меняем у всех клеткок цвет, если изменен вид показа.
         for line in self.map_main:
             for cell in line:
                 cell.switch_color()
@@ -410,10 +426,25 @@ class Map:
         return self.map_main[i][j]
 
     def get_map(self):
-        return self.map_main
+        return self.map_main[:]
 
     def set_map(self, map):
         self.map_main = map
 
     def get_age(self):
         return self.age
+
+    def set_age(self, age):
+        self.age = age
+
+    def clone(self):
+        res_map = []
+        for i in self.map_main:
+           line = []
+           for j in i:
+               line.append(j)
+           res_map.append(line)
+        res = Map()
+        res.set_map(res_map)
+        res.set_age(self.age)
+        return res
