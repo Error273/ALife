@@ -92,6 +92,7 @@ class Window(QMainWindow):
             self.map.set_cell(i, j, Bacteria(300 + j * CELL_SIZE, i * 10,
                                              (randint(0, 255), randint(0, 255), randint(0, 255))))
         self.history = [self.map.clone()]
+        self.age_label.setText(f'Прошло ходов: {self.map.get_age()}')
 
     def change_start_or_stop(self):
         if not self.started:
@@ -169,17 +170,22 @@ class Window(QMainWindow):
 
     def load_sim(self):
         path = QFileDialog.getOpenFileName(self, 'Открыть симуляцию', '', 'Симуляция (*.sim)')[0]
-        if path:
+        if path.endswith('.sim'): # защита но то, что пользователь не откроет что-нибудь другое
             OpenSimulationDialog(path, self)
 
     def load_last_step(self, path):
         with open(path, 'rb') as f:
-            self.history = pickle.load(f)
-            self.map = self.history[-1]
+                self.history = pickle.load(f)
+                self.map = self.history[-1]
+                self.minerals_frequency, self.sun_amount, self.mutation_chance = self.map.get_settings()
+                self.minerals_amount_box.setValue(self.minerals_frequency)
+                self.sun_amount_box.setValue(self.sun_amount)
+                self.mutation_chance_box.setValue(self.mutation_chance)
+                self.age_label.setText(f'Прошло ходов: {self.map.get_age()}')
 
     def load_history(self, path):
-        with open(path, 'rb') as f:
-            SimulationHistoryWindow(pickle.load(f), self)
+            with open(path, 'rb') as f:
+                SimulationHistoryWindow(pickle.load(f), self)
 
     def save_stats(self):
         path = QFileDialog.getSaveFileName(self, 'Сохранить статистику', '', 'База данных sqlite (*.sqlite3)')[0]
