@@ -7,12 +7,10 @@ from PyQt5.QtGui import QPainter, QColor, QPen
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtWidgets import QFileDialog, QWidget
 from PyQt5 import QtCore, QtWidgets
+import sqlite3
 
 from windows import *
 from classes import *
-
-
-
 
 
 class Window(QMainWindow):
@@ -72,6 +70,8 @@ class Window(QMainWindow):
         self.load_sim_btn.clicked.connect(self.load_sim)
 
         self.start_simulation_btn.clicked.connect(self.start_simulation)
+
+        self.save_statistics_btn.clicked.connect(self.save_stats)
         #  таймер необходим для того, чтобы правильно обновлять поле битвы. напрямую влияет на скорость симуляции.
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.repaint)
@@ -80,11 +80,11 @@ class Window(QMainWindow):
 
         self.timer.start(self.update_time)
 
-
     def start_simulation(self):
         # карта со всеми объектами типо бактрий или минералов.
         # сразу присвиваем клеткам x и y, отрисовывать потом будем именно по ним.
         self.map = Map()
+        self.update_map_settings()
         for i in range(START_GENERATION):
             i, j = randint(0, 59), randint(0, 59)
             while self.map.get_cell(i, j).name != 'BaseCell':
@@ -107,15 +107,21 @@ class Window(QMainWindow):
 
     def change_mineral_frequency(self):
         self.minerals_frequency = self.minerals_amount_box.value()
+        self.update_map_settings()
 
     def change_sun_amount(self):
         self.sun_amount = self.sun_amount_box.value()
+        self.update_map_settings()
 
     def change_mutate_chance(self):
         self.mutation_chance = self.mutation_chance_box.value()
+        self.update_map_settings()
 
     def switch_view_mode(self):
         self.map.switch_cells_color()
+
+    def update_map_settings(self):
+        self.map.set_settings([self.minerals_frequency, self.sun_amount, self.mutation_chance])
 
     def paintEvent(self, event):
         qp = QPainter()
@@ -141,7 +147,7 @@ class Window(QMainWindow):
             for i in range(60):
                 sun_map.append(last_n)
                 last_n = int(last_n * 0.9)
-            self.map.update(self.minerals_frequency, sun_map, self.mutation_chance)
+            self.map.update(sun_map)
             self.history.append(self.map.clone())
             self.age_label.setText(f'Прошло ходов: {self.map.get_age()}')
         # отрисовываем карту
@@ -157,9 +163,9 @@ class Window(QMainWindow):
 
     def save_sim(self):
         path = QFileDialog.getSaveFileName(self, 'Сохранить симуляцию', '', 'Симуляция (*.sim)')[0]
-        with open(path, 'wb') as f:
-            pickle.dump(self.history, f)
-
+        if path:
+            with open(path, 'wb') as f:
+                pickle.dump(self.history, f)
 
     def load_sim(self):
         path = QFileDialog.getOpenFileName(self, 'Открыть симуляцию', '', 'Симуляция (*.sim)')[0]
@@ -171,11 +177,44 @@ class Window(QMainWindow):
             self.history = pickle.load(f)
             self.map = self.history[-1]
 
-
     def load_history(self, path):
         with open(path, 'rb') as f:
             SimulationHistoryWindow(pickle.load(f), self)
 
+    def save_stats(self):
+        path = QFileDialog.getSaveFileName(self, 'Сохранить статистику', '', 'База данных sqlite (*.sqlite3)')[0]
+        if path:
+            db = sqlite3.connect(path)
+            cur = db.cursor()
+            cur.execute("""CREATE TABLE statistics (
+            id INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,
+            age INTEGER NOT NULL UNIQUE,
+            minerals_setting INTEGER,
+            sun_setting INTEGER,
+            mutation_rate INTEGER,
+            bacteria_number INTEGER,
+            minerals_amount INTEGER,
+            born_amount INTEGER,
+            died_amount INTEGER,
+            sun_eaters_amount INTEGER,
+            flesh_eaters_amount INTEGER,
+            minerals_eaters_amount INTEGER);""")
+            for frame in self.history:
+                settings = frame.get_settings()
+                statistics = frame.get_statistics()
+                cur.execute(f"""INSERT INTO statistics(age,
+                                                      minerals_setting,
+                                                      sun_setting,
+                                                      mutation_rate,
+                                                      bacteria_number,
+                                                      minerals_amount,
+                                                      born_amount,
+                                                      died_amount,
+                                                      sun_eaters_amount,
+                                                      flesh_eaters_amount,
+                                                      minerals_eaters_amount)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", [frame.get_age()] + settings + statistics)
+            db.commit()
 
 
 if __name__ == '__main__':

@@ -65,10 +65,9 @@ class BaseCell:
         return self.y
 
     def get_color(self):
-        if self.current_color_mode == 1:
+        if self.current_color_mode:
             return self.eating_color
-        else:
-            return self.team_color
+        return self.team_color
 
     def set_x(self, x):
         self.x = x
@@ -96,6 +95,9 @@ class BaseCell:
 
     def get_team_color(self):
         return self.team_color
+
+    def get_eating_color(self):
+        return self.eating_color
 
     def get_current_color_mode(self):
         return self.current_color_mode
@@ -337,11 +339,25 @@ class Map:
                          for i in range(300, WINDOW_WIDTH, CELL_SIZE)]
         self.age = 0
 
-    def update(self, mineral_frequency, sun_map, mutate_chance):
+        """список с данными для статистики.
+        0) общее количество бактерий -
+        1) общее количество минералов -
+        2) Количество рожденных за ход -
+        3) Количество умерших за ход -
+        4) Количество солнцеедов
+        5) Количество мясоедов
+        6) Количество минералоедов"""
+        self.statistics = [0, 0, 0, 0, 0, 0, 0]
+        # настройки симуляции. количество минералов, солнечной энергии, шанс мутации.
+        self.settings = [0, 0, 0]
+
+    def update(self, sun_map):
         """Для того, чтобы бактерии двигались более плавно, необходимо было ввести им параметр updated.
         Без него получается так,что бактерии обновляются по несколько раз.
         Потом, после того, как мы обновили все клетки, нужно им заного дать возможность обновиться."""
         self.age += 1
+        # сбрасываем статистику
+        self.statistics = [0, 0, 0, 0, 0, 0, 0]
         # обновляем карту
         #
         new_map = self.map_main[:]
@@ -358,7 +374,7 @@ class Map:
         self.map_main = new_map
 
         # генерируем минерал
-        self.generate_mineral(mineral_frequency)
+        self.generate_mineral(self.settings[0])
 
         # убиваем тех, у кого 0 энергии
         for i in range(len(self.map_main)):
@@ -366,6 +382,8 @@ class Map:
                 cell = self.map_main[i][j]
                 if cell.get_energy() <= 0:
                     self.set_cell(i, j, Mineral(cell.x, cell.y, GREY))
+                    # подсчитываем умерших
+                    self.statistics[3] += 1
 
         # отпочковываем клетки
         for i in range(len(self.map_main)):
@@ -389,12 +407,26 @@ class Map:
                     new_cell = self.map_main[new_i][new_j]
                     new_cell.set_genome(*cell.get_genome())
                     new_cell.set_current_color_mode(cell.get_current_color_mode())
-                    new_cell.mutate(mutate_chance)
+                    new_cell.mutate(self.settings[2])
                     cell.set_energy(cell.get_energy() - 100)
-        # заного даем всем обновиться
+                    self.statistics[2] += 1  # добавляем новорожденного в статистику
+        # заного даем всем обновиться и подсчитываем клетки
         for line in self.map_main:
             for cell in line:
                 cell.set_updated(False)
+                if cell.name == 'Bacteria':  # общее кол-во бактерия
+                    self.statistics[0] += 1
+                    color = cell.get_eating_color()  # получаем цвет клетки
+                    if color != [255, 255, 255]:
+                        color = color.index(max(color))  # смотрим, какой из цветов преобладает
+                        if color == 0:  # если клетка красная, то она мясоед
+                            self.statistics[5] += 1
+                        elif color == 1:  # если клетка зеленая, то она солцеед
+                            self.statistics[4] += 1
+                        elif color == 2:  # если клетка синяя, то она минералоед
+                            self.statistics[6] += 1
+                elif cell.name == 'Mineral':  # общее кол-во минералов
+                    self.statistics[1] += 1
 
     def generate_mineral(self, frequency):
         """Гинерируем минерал"""
@@ -437,14 +469,28 @@ class Map:
     def set_age(self, age):
         self.age = age
 
+    def get_statistics(self):
+        return self.statistics
+
+    def set_statistics(self, statistics):
+        self.statistics = statistics
+
+    def get_settings(self):
+        return self.settings
+
+    def set_settings(self, settings):
+        self.settings = settings
+
     def clone(self):
         res_map = []
         for i in self.map_main:
-           line = []
-           for j in i:
-               line.append(j)
-           res_map.append(line)
+            line = []
+            for j in i:
+                line.append(j)
+            res_map.append(line)
         res = Map()
         res.set_map(res_map)
         res.set_age(self.age)
+        res.set_statistics(self.statistics)
+        res.set_settings(self.settings)
         return res

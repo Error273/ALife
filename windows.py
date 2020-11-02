@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPainter, QColor, QPen
 from constants import *
+from random import randint
 
 
 class OpenSimulationDialog(QWidget):
@@ -43,6 +44,11 @@ class SimulationHistoryWindow(QWidget):
         self.setWindowTitle('История симуляции')
         self.setFixedSize(750, 650)
         self.history = history
+        for frame in self.history:
+            for line in frame.get_map():
+                for cell in line:
+                    cell.set_current_color_mode(0)
+
         self.label = QtWidgets.QLabel(self)
         self.label.setGeometry(5, 5, 100, 100)
         self.label.setText('Показ')
@@ -50,6 +56,8 @@ class SimulationHistoryWindow(QWidget):
         self.comboBox.setGeometry(40, 40, 100, 30)
         self.comboBox.addItem('Команды')
         self.comboBox.addItem('Предпочтительность')
+        self.comboBox.currentTextChanged.connect(self.switch_color)
+        self.show_mode = 0
         self.slider = QtWidgets.QSlider(self)
         self.slider.setOrientation(1)
         self.slider.setGeometry(155, 610, 585, 40)
@@ -57,6 +65,9 @@ class SimulationHistoryWindow(QWidget):
         self.slider.setMaximum(len(self.history) - 1)
         self.slider.setValue(0)
         self.slider.valueChanged.connect(self.repaint)
+        self.age_label = QtWidgets.QLabel(self)
+        self.age_label.setGeometry(10, 580, 150, 100)
+        self.age_label.setText('Прошло ходов: 0')
         self.show()
 
     def paintEvent(self, e):
@@ -64,11 +75,20 @@ class SimulationHistoryWindow(QWidget):
         qp.begin(self)
         qp.setBrush(QColor(0, 0, 0))
         qp.drawLine(150, 0, 150, 750)
-        self.frame = self.history[self.slider.value()].get_map()
-        for i in self.frame:
+        self.age_label.setText(f'Прошло ходов: {self.slider.value()}')
+        frame = self.history[self.slider.value()].get_map()
+        for i in frame:
             for cell in i:
                 if cell.name != 'BaseCell':
                     qp.setBrush(QColor(*cell.get_color()))
                     qp.setPen(QPen(QColor(*cell.get_color())))
                     qp.drawRect(cell.get_x() - 150, cell.get_y(), CELL_SIZE, CELL_SIZE)
         qp.end()
+
+    def switch_color(self):
+        self.show_mode = not self.show_mode
+        for frame in self.history:
+            for i in frame.get_map():
+                for cell in i:
+                    cell.set_current_color_mode(self.show_mode)
+        self.update()
