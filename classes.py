@@ -346,8 +346,9 @@ class Map:
         3) Количество умерших за ход -
         4) Количество солнцеедов
         5) Количество мясоедов
-        6) Количество минералоедов"""
-        self.statistics = [0, 0, 0, 0, 0, 0, 0]
+        6) Количество минералоедов
+        7) Количество съеденных"""
+        self.statistics = [0, 0, 0, 0, 0, 0, 0, 0]
         # настройки симуляции. количество минералов, солнечной энергии, шанс мутации.
         self.settings = [0, 0, 0]
 
@@ -357,7 +358,7 @@ class Map:
         Потом, после того, как мы обновили все клетки, нужно им заного дать возможность обновиться."""
         self.age += 1
         # сбрасываем статистику
-        self.statistics = [0, 0, 0, 0, 0, 0, 0]
+        self.statistics = [0, 0, 0, 0, 0, 0, 0, 0]
         # обновляем карту
         #
         new_map = self.map_main[:]
@@ -369,6 +370,8 @@ class Map:
                     new_map[i][j] = BaseCell(cell.x, cell.y, WHITE)
                     new_map[new_i][new_j] = cell
                 else:
+                    if new_map[new_i][new_j].name == 'Bacteria': # если бактерию съели, добавляем к статистике
+                        self.statistics[7] += 1
                     new_map[new_i][new_j] = BaseCell(cell.x, cell.y, WHITE)
 
         self.map_main = new_map

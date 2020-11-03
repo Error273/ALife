@@ -45,6 +45,11 @@ class Window(QMainWindow):
         self.view_mode_box.setToolTip('''Команды - какому роду принадлежит каждая бактерия. Предпочтительность - 
         солнцееды зеленеют, мясоеды краснеют, а минералоеды синеют''')
 
+        self.save_history_checkbox.setToolTip('Облегчает нагрузку на компьютер из-за того что история не сохраняется.'
+                                              'Вы не сможете сохранять статистику или симуляции.')
+        self.save_history = True
+        self.save_history_checkbox.stateChanged.connect(self.change_save_history)
+
         #  время, через которое обновляется экран, мс
         self.simulation_speed_box.valueChanged.connect(self.change_update_time)
         self.update_time = 200
@@ -118,6 +123,15 @@ class Window(QMainWindow):
         self.mutation_chance = self.mutation_chance_box.value()
         self.update_map_settings()
 
+    def change_save_history(self):
+        self.save_history = not self.save_history
+        if not self.save_history:
+            self.save_sim_btn.setDisabled(True)
+            self.save_statistics_btn.setDisabled(True)
+        else:
+            self.save_sim_btn.setDisabled(False)
+            self.save_statistics_btn.setDisabled(False)
+
     def switch_view_mode(self):
         self.map.switch_cells_color()
 
@@ -149,7 +163,8 @@ class Window(QMainWindow):
                 sun_map.append(last_n)
                 last_n = int(last_n * 0.9)
             self.map.update(sun_map)
-            self.history.append(self.map.clone())
+            if self.save_history:
+                self.history.append(self.map.clone())
             self.age_label.setText(f'Прошло ходов: {self.map.get_age()}')
         # отрисовываем карту
         map = self.map.get_map()
@@ -194,7 +209,7 @@ class Window(QMainWindow):
             cur = db.cursor()
             cur.execute("""CREATE TABLE statistics (
             id INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,
-            age INTEGER NOT NULL UNIQUE,
+            age INTEGER NOT NULL,
             minerals_setting INTEGER,
             sun_setting INTEGER,
             mutation_rate INTEGER,
@@ -204,7 +219,8 @@ class Window(QMainWindow):
             died_amount INTEGER,
             sun_eaters_amount INTEGER,
             flesh_eaters_amount INTEGER,
-            minerals_eaters_amount INTEGER);""")
+            minerals_eaters_amount INTEGER,
+            eaten_amount INTEGER);""")
             for frame in self.history:
                 settings = frame.get_settings()
                 statistics = frame.get_statistics()
@@ -218,8 +234,9 @@ class Window(QMainWindow):
                                                       died_amount,
                                                       sun_eaters_amount,
                                                       flesh_eaters_amount,
-                                                      minerals_eaters_amount)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", [frame.get_age()] + settings + statistics)
+                                                      minerals_eaters_amount,
+                                                      eaten_amount)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", [frame.get_age()] + settings + statistics)
             db.commit()
 
 

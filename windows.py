@@ -75,9 +75,9 @@ class SimulationHistoryWindow(QWidget):
         qp.begin(self)
         qp.setBrush(QColor(0, 0, 0))
         qp.drawLine(150, 0, 150, 750)
-        self.age_label.setText(f'Прошло ходов: {self.slider.value()}')
-        frame = self.history[self.slider.value()].get_map()
-        for i in frame:
+        frame = self.history[self.slider.value()]
+        self.age_label.setText(f'Прошло ходов: {frame.get_age()}')
+        for i in frame.get_map():
             for cell in i:
                 if cell.name != 'BaseCell':
                     qp.setBrush(QColor(*cell.get_color()))

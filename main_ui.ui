@@ -45,67 +45,15 @@
      <rect>
       <x>0</x>
       <y>81</y>
-      <width>247</width>
+      <width>274</width>
       <height>431</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="3" column="2">
-      <widget class="QSpinBox" name="mutation_chance_box">
-       <property name="value">
-        <number>5</number>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0" colspan="2">
-      <widget class="QLabel" name="sun_label">
-       <property name="text">
-        <string>Количество солнечной энергии</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="show_label">
-       <property name="text">
-        <string>Показ</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="2">
-      <widget class="QSpinBox" name="sun_amount_box">
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="value">
-        <number>40</number>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="mutation_label">
-       <property name="text">
-        <string>Шанс мутации</string>
-       </property>
-      </widget>
-     </item>
      <item row="0" column="0" colspan="2">
       <widget class="QLabel" name="speed_label">
        <property name="text">
         <string>Скорость симуляции, мс</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="2">
-      <widget class="QSpinBox" name="minerals_amount_box">
-       <property name="value">
-        <number>10</number>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0" colspan="2">
-      <widget class="QLabel" name="minerals_label">
-       <property name="text">
-        <string>Количество минералов</string>
        </property>
       </widget>
      </item>
@@ -116,6 +64,34 @@
        </property>
        <property name="value">
         <number>200</number>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0" colspan="2">
+      <widget class="QLabel" name="minerals_label">
+       <property name="text">
+        <string>Количество минералов</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <widget class="QSpinBox" name="minerals_amount_box">
+       <property name="value">
+        <number>10</number>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="2">
+      <widget class="QSpinBox" name="mutation_chance_box">
+       <property name="value">
+        <number>5</number>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0" colspan="3">
+      <widget class="QPushButton" name="save_sim_btn">
+       <property name="text">
+        <string>Сохранить симуляцию</string>
        </property>
       </widget>
      </item>
@@ -140,15 +116,46 @@
        </property>
       </widget>
      </item>
-     <item row="5" column="0" colspan="3">
-      <widget class="QPushButton" name="save_sim_btn">
+     <item row="2" column="0" colspan="2">
+      <widget class="QLabel" name="sun_label">
        <property name="text">
-        <string>Сохранить симуляцию</string>
+        <string>Количество солнечной энергии</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2">
+      <widget class="QSpinBox" name="sun_amount_box">
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="value">
+        <number>40</number>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="show_label">
+       <property name="text">
+        <string>Показ</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="mutation_label">
+       <property name="text">
+        <string>Шанс мутации</string>
        </property>
       </widget>
      </item>
      <item row="4" column="1" colspan="2">
       <widget class="QComboBox" name="view_mode_box"/>
+     </item>
+     <item row="9" column="0" colspan="2">
+      <widget class="QCheckBox" name="save_history_checkbox">
+       <property name="text">
+        <string>Не сохранять историю</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
