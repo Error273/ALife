@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="windowModality">
+   <enum>Qt::NonModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -10,23 +13,28 @@
     <height>607</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>900</width>
+    <height>607</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>900</width>
+    <height>607</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>ALife</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="start_or_stop_button">
-    <property name="geometry">
-     <rect>
-      <x>1</x>
-      <y>38</y>
-      <width>121</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Старт симуляции</string>
-    </property>
-   </widget>
    <widget class="QLabel" name="age_label">
     <property name="geometry">
      <rect>
@@ -43,88 +51,38 @@
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>81</y>
-      <width>274</width>
+      <x>9</x>
+      <y>62</y>
+      <width>281</width>
       <height>431</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="0" colspan="2">
-      <widget class="QLabel" name="speed_label">
-       <property name="text">
-        <string>Скорость симуляции, мс</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="2">
-      <widget class="QSpinBox" name="simulation_speed_box">
-       <property name="maximum">
-        <number>1000</number>
-       </property>
-       <property name="value">
-        <number>200</number>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0" colspan="2">
-      <widget class="QLabel" name="minerals_label">
-       <property name="text">
-        <string>Количество минералов</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="2">
-      <widget class="QSpinBox" name="minerals_amount_box">
-       <property name="value">
-        <number>10</number>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="2">
-      <widget class="QSpinBox" name="mutation_chance_box">
-       <property name="value">
-        <number>5</number>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="0" colspan="3">
-      <widget class="QPushButton" name="save_sim_btn">
-       <property name="text">
-        <string>Сохранить симуляцию</string>
-       </property>
-      </widget>
-     </item>
-     <item row="8" column="0" colspan="3">
-      <widget class="QPushButton" name="start_simulation_btn">
-       <property name="text">
-        <string>Начать новую симуляцию</string>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="0" colspan="3">
-      <widget class="QPushButton" name="save_statistics_btn">
-       <property name="text">
-        <string>Сохранить статистику</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="0" colspan="3">
-      <widget class="QPushButton" name="load_sim_btn">
-       <property name="text">
-        <string>Загрузить симуляцию</string>
-       </property>
-      </widget>
-     </item>
      <item row="2" column="0" colspan="2">
       <widget class="QLabel" name="sun_label">
+       <property name="toolTip">
+        <string>Чем больше этот показатель - тем сильнее солнце светит и ниже проходит</string>
+       </property>
        <property name="text">
         <string>Количество солнечной энергии</string>
        </property>
       </widget>
      </item>
+     <item row="1" column="2">
+      <widget class="QSpinBox" name="minerals_amount_box">
+       <property name="toolTip">
+        <string>Какая вероятность создания минерала каждое обновление экрана</string>
+       </property>
+       <property name="value">
+        <number>10</number>
+       </property>
+      </widget>
+     </item>
      <item row="2" column="2">
       <widget class="QSpinBox" name="sun_amount_box">
+       <property name="toolTip">
+        <string>Чем больше этот показатель - тем сильнее солнце светит и ниже проходит</string>
+       </property>
        <property name="minimum">
         <number>1</number>
        </property>
@@ -133,8 +91,23 @@
        </property>
       </widget>
      </item>
+     <item row="9" column="0" colspan="2">
+      <widget class="QCheckBox" name="save_history_checkbox">
+       <property name="toolTip">
+        <string>Облегчает нагрузку на компьютер из-за того что история не сохраняется.
+Вы не сможете сохранять статистику или симуляции.</string>
+       </property>
+       <property name="text">
+        <string>Не сохранять историю</string>
+       </property>
+      </widget>
+     </item>
      <item row="4" column="0">
       <widget class="QLabel" name="show_label">
+       <property name="toolTip">
+        <string>Команды - какому роду принадлежит каждая бактерия. Предпочтительность - 
+        солнцееды зеленеют, мясоеды краснеют, а минералоеды синеют</string>
+       </property>
        <property name="text">
         <string>Показ</string>
        </property>
@@ -142,18 +115,134 @@
      </item>
      <item row="3" column="0">
       <widget class="QLabel" name="mutation_label">
+       <property name="toolTip">
+        <string>С какой вероятнстью изменится вес нейросети при рождении</string>
+       </property>
        <property name="text">
         <string>Шанс мутации</string>
        </property>
       </widget>
      </item>
      <item row="4" column="1" colspan="2">
-      <widget class="QComboBox" name="view_mode_box"/>
+      <widget class="QComboBox" name="view_mode_box">
+       <property name="toolTip">
+        <string>Команды - какому роду принадлежит каждая бактерия. Предпочтительность - 
+        солнцееды зеленеют, мясоеды краснеют, а минералоеды синеют</string>
+       </property>
+      </widget>
      </item>
-     <item row="9" column="0" colspan="2">
-      <widget class="QCheckBox" name="save_history_checkbox">
+     <item row="1" column="0" colspan="2">
+      <widget class="QLabel" name="minerals_label">
+       <property name="toolTip">
+        <string>Какая вероятность создания минерала каждое обновление экрана</string>
+       </property>
        <property name="text">
-        <string>Не сохранять историю</string>
+        <string>Количество минералов</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QSpinBox" name="simulation_speed_box">
+       <property name="toolTip">
+        <string>Через какое время в милисекундах будет обновляться симуляция</string>
+       </property>
+       <property name="maximum">
+        <number>1000</number>
+       </property>
+       <property name="value">
+        <number>200</number>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0" colspan="2">
+      <widget class="QLabel" name="speed_label">
+       <property name="toolTip">
+        <string>Через какое время в милисекундах будет обновляться симуляция</string>
+       </property>
+       <property name="text">
+        <string>Скорость симуляции, мс</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="2">
+      <widget class="QSpinBox" name="mutation_chance_box">
+       <property name="toolTip">
+        <string>С какой вероятнстью изменится вес нейросети при рождении</string>
+       </property>
+       <property name="value">
+        <number>5</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="layoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>8</x>
+      <y>20</y>
+      <width>281</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="start_or_stop_button">
+       <property name="toolTip">
+        <string>Старт симуляции</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="save_sim_btn">
+       <property name="toolTip">
+        <string>Сохранить симуляцию</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="load_sim_btn">
+       <property name="toolTip">
+        <string>Загрузить симуляцию</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="save_statistics_btn">
+       <property name="toolTip">
+        <string>Сохранить статистику</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="start_simulation_btn">
+       <property name="toolTip">
+        <string>Начать новую симуляцию</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="view_statistics_btn">
+       <property name="toolTip">
+        <string>Просмотреть сохраненную статистику</string>
+       </property>
+       <property name="text">
+        <string/>
        </property>
       </widget>
      </item>

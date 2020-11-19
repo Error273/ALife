@@ -26,6 +26,12 @@ class NeuralNetwork:
         inputs = numpy.array(inputs_list, ndmin=2).T
         # по сути, все, что мы делаем дальше это перемножаем матрицы весов и результата, полученного на прошлом слое.
         # так, мы умножаем матрицу весов и входные данные, подвергаем функции активации, получаем новые данные, повторяем.
+        # функция активации - relu, выражается как numpy.maximum(0, layer). relu для примера, ее можно легко изменить
+        # на любую другую.
+        # P.S я понимаю, что relu ни на что не влияет, так как у меня нет отрицательных весов. сделал я так для того, чтобы ее при необходимости можно было
+        # легко заменить на любую другую. Да и тем более, мне понравилось как бактерии ведут себя при relu =)
+        # и еще, тут нельзя использовать функции, которые создаются в других функциях из-за pickle. Если нужно сделать
+        # функцию активации, то только глобальную
         hidden_inputs1 = numpy.dot(self.wih1, inputs)
         hidden_outputs1 = numpy.maximum(0, hidden_inputs1)
         hidden_inputs2 = numpy.dot(self.wh1h2, hidden_outputs1)
@@ -142,7 +148,7 @@ class Bacteria(BaseCell):
             # может быть ничего, край карты, союзная клетка, чужая клетка. минералы считаются чужими клетками.
             # ничего - 0, край - 1, союзник - 2, противник - 3
             # копипаст, но ниче другого не сделаешь.
-            if i - 1 < 0:
+            if i - 1 < 0: # если сверху край
                 whats_around[0][1] = 1
             else:
                 up = map1[i - 1][j]
@@ -151,14 +157,17 @@ class Bacteria(BaseCell):
                 elif up.name == 'Mineral':
                     whats_around[0][3] = 1
                 elif up.name == 'Bacteria':
+                    # проверяем, клетка своего ли рода
+                    # случайные входные данные для теста
                     test_data = [uniform(0, 1) for _ in range(21)]
+                    # получаем результаты от двух нейронок. если они одинаковые, то и клетки к одному роду принадлежат
                     res1 = self.net.activate(test_data)
                     res2 = up.net.activate(test_data)
                     if all(res1 == res2):
                         whats_around[0][3] = 1
                     else:
                         whats_around[0][2] = 1
-            #
+
             if i + 1 > 59:
                 whats_around[1][1] = 1
             else:
@@ -175,7 +184,7 @@ class Bacteria(BaseCell):
                         whats_around[1][3] = 1
                     else:
                         whats_around[1][2] = 1
-            #
+
             if j + 1 > 59:
                 whats_around[2][1] = 1
             else:
@@ -192,7 +201,7 @@ class Bacteria(BaseCell):
                         whats_around[2][3] = 1
                     else:
                         whats_around[2][2] = 1
-            #
+
             if j - 1 < 0:
                 whats_around[3][1] = 1
             else:
@@ -202,7 +211,6 @@ class Bacteria(BaseCell):
                 elif left.name == 'Mineral':
                     whats_around[3][3] = 1
                 elif left.name == 'Bacteria':
-                    #  выясняем, союзная ли перед нами клетка.
                     test_data = [uniform(0, 1) for _ in range(21)]
                     res1 = self.net.activate(test_data)
                     res2 = left.net.activate(test_data)
@@ -326,8 +334,8 @@ class Mineral(BaseCell):
                 new_i += 1
             #  если в предполагаемой координате никого нет, то можем двигаться
             if map1[new_i][new_j].name == 'BaseCell':
-                self.x = 300 + new_j * CELL_SIZE
-                self.y = new_i * CELL_SIZE
+                self.x = 300 + new_j * CELL_SIZE # 300 прибавляем для того, чтобы сделать отступ от левой части экрана
+                self.y = new_i * CELL_SIZE # и клетки отрисовывались за чертой
                 return new_i, new_j, False
         return i, j, False
 
@@ -432,7 +440,7 @@ class Map:
                     self.statistics[1] += 1
 
     def generate_mineral(self, frequency):
-        """Гинерируем минерал"""
+        """Генерируем минерал"""
         attempts = 5  # количество попыток генерации минералов.
         # когда клеток становится слишком много и места просто нет, мы влетаем в вечный цикл.
         # мы просто ограничиваем количество попыток.
