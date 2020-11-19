@@ -6,7 +6,6 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtGui import QIcon
-import sqlite3
 from datetime import datetime
 
 from windows import *
@@ -30,7 +29,7 @@ class Window(QMainWindow):
 
         # привязываем кнопочки
         self.start_or_stop_button.clicked.connect(self.change_start_or_stop)
-        self.start_or_stop_button.setIcon(QIcon('start_icon.png'))
+        self.start_or_stop_button.setIcon(QIcon('./icons/start_icon.png'))
         self.started = False
 
         self.minerals_amount_box.valueChanged.connect(self.change_mineral_frequency)
@@ -47,18 +46,18 @@ class Window(QMainWindow):
         self.view_mode_box.currentTextChanged.connect(self.switch_view_mode)
 
         self.save_sim_btn.clicked.connect(self.save_sim)
-        self.save_sim_btn.setIcon(QIcon('save_icon.png'))
+        self.save_sim_btn.setIcon(QIcon('./icons/save_icon.png'))
         self.load_sim_btn.clicked.connect(self.load_sim)
-        self.load_sim_btn.setIcon(QIcon('load_icon.png'))
+        self.load_sim_btn.setIcon(QIcon('./icons/load_icon.png'))
 
         self.start_simulation_btn.clicked.connect(self.start_simulation)
-        self.start_simulation_btn.setIcon(QIcon('restart_icon.png'))
+        self.start_simulation_btn.setIcon(QIcon('./icons/restart_icon.png'))
 
         self.save_statistics_btn.clicked.connect(self.open_save_stats_dialogue)
-        self.save_statistics_btn.setIcon(QIcon('save_stats_icon.jpg'))
+        self.save_statistics_btn.setIcon(QIcon('./icons/save_stats_icon.jpg'))
 
         self.view_statistics_btn.clicked.connect(self.view_statistics)
-        self.view_statistics_btn.setIcon(QIcon('view_db_icon.png'))
+        self.view_statistics_btn.setIcon(QIcon('./icons/view_db_icon.png'))
 
         self.save_history = True
         self.save_history_checkbox.stateChanged.connect(self.change_save_history)
@@ -87,11 +86,11 @@ class Window(QMainWindow):
     def change_start_or_stop(self):
         if not self.started:
             self.start_or_stop_button.setToolTip('Стоп')
-            self.start_or_stop_button.setIcon(QIcon('stop_icon.png'))
+            self.start_or_stop_button.setIcon(QIcon('./icons/stop_icon.png'))
             self.started = True
         else:
             self.start_or_stop_button.setToolTip('Старт симуляции')
-            self.start_or_stop_button.setIcon(QIcon('start_icon.png'))
+            self.start_or_stop_button.setIcon(QIcon('./icons/start_icon.png'))
             self.started = False
 
     def change_update_time(self):
