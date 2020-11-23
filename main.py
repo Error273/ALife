@@ -72,16 +72,16 @@ class Window(QMainWindow):
     def start_simulation(self):
         # карта со всеми объектами типо бактрий или минералов.
         # сразу присвиваем клеткам x и y, отрисовывать потом будем именно по ним.
-        self.map = Map()
+        self.map_main = Map()
         self.update_map_settings()
         for i in range(START_GENERATION):
             i, j = randint(0, 59), randint(0, 59)
-            while self.map.get_cell(i, j).name != 'BaseCell':
+            while self.map_main.get_cell(i, j).name != 'BaseCell':
                 i, j = randint(0, 59), randint(0, 59)
-            self.map.set_cell(i, j, Bacteria(300 + j * CELL_SIZE, i * CELL_SIZE,
-                                             (randint(0, 255), randint(0, 255), randint(0, 255))))
-        self.history = [self.map.clone()]
-        self.age_label.setText(f'Прошло ходов: {self.map.get_age()}')
+            self.map_main.set_cell(i, j, Bacteria(300 + j * CELL_SIZE, i * CELL_SIZE,
+                                                  (randint(0, 255), randint(0, 255), randint(0, 255))))
+        self.history = [self.map_main.clone()]
+        self.age_label.setText(f'Прошло ходов: {self.map_main.get_age()}')
 
     def change_start_or_stop(self):
         if not self.started:
@@ -119,10 +119,10 @@ class Window(QMainWindow):
             self.save_statistics_btn.setDisabled(False)
 
     def switch_view_mode(self):
-        self.map.switch_cells_color()
+        self.map_main.switch_cells_color()
 
     def update_map_settings(self):
-        self.map.set_settings([self.minerals_frequency, self.sun_amount, self.mutation_chance])
+        self.map_main.set_settings([self.minerals_frequency, self.sun_amount, self.mutation_chance])
 
     def paintEvent(self, event):
         qp = QPainter()
@@ -148,12 +148,12 @@ class Window(QMainWindow):
             for i in range(60):
                 sun_map.append(last_n)
                 last_n = int(last_n * 0.9)
-            self.map.update(sun_map)
+            self.map_main.update(sun_map)
             if self.save_history:
-                self.history.append(self.map.clone())
-            self.age_label.setText(f'Прошло ходов: {self.map.get_age()}')
+                self.history.append(self.map_main.clone())
+            self.age_label.setText(f'Прошло ходов: {self.map_main.get_age()}')
         # отрисовываем карту
-        map = self.map.get_map()
+        map = self.map_main.get_map()
         for i in map:
             for cell in i:
                 # пустые клетки не отрисовываем
@@ -177,12 +177,12 @@ class Window(QMainWindow):
     def load_last_step(self, path):
         with open(path, 'rb') as f:
             self.history = pickle.load(f)
-            self.map = self.history[-1]
-            self.minerals_frequency, self.sun_amount, self.mutation_chance = self.map.get_settings()
+            self.map_main = self.history[-1]
+            self.minerals_frequency, self.sun_amount, self.mutation_chance = self.map_main.get_settings()
             self.minerals_amount_box.setValue(self.minerals_frequency)
             self.sun_amount_box.setValue(self.sun_amount)
             self.mutation_chance_box.setValue(self.mutation_chance)
-            self.age_label.setText(f'Прошло ходов: {self.map.get_age()}')
+            self.age_label.setText(f'Прошло ходов: {self.map_main.get_age()}')
 
     def load_history(self, path):
         with open(path, 'rb') as f:

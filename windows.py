@@ -11,9 +11,9 @@ class OpenSimulationDialog(QDialog):
     def __init__(self, path, parent=None):
         super().__init__(parent, QtCore.Qt.Window)
         self.setGeometry(600, 300, 320, 240)
-        self.setModal(True) # делаем так, чтобы нельзя было трогать другие окна, пока не закроем это.
+        self.setModal(True)  # делаем так, чтобы нельзя было трогать другие окна, пока не закроем это.
         self.setFixedSize(320, 240)
-        self.path = path # путь до файла
+        self.path = path  # путь до файла
         self.label = QtWidgets.QLabel(self)
         self.label.setGeometry(QtCore.QRect(10, 30, 301, 101))
         self.look_btn = QtWidgets.QPushButton(self)
@@ -22,9 +22,9 @@ class OpenSimulationDialog(QDialog):
         self.continue_btn.setGeometry(QtCore.QRect(230, 200, 93, 28))
 
         self.setWindowTitle("Открыть симуляцию")
-        self.label.setText( "<html><head/><body><p><span style=\" font-size:10pt;\">Вы желаете просмотреть историю"
-                            "</span></p><p><span style=\" font-size:10pt;\"> симуляции или продолжить</span></p><p>"
-                            "<span style=\" font-size:10pt;\"> с последнего хода?</span></p></body></html>")
+        self.label.setText("<html><head/><body><p><span style=\" font-size:10pt;\">Вы желаете просмотреть историю"
+                           "</span></p><p><span style=\" font-size:10pt;\"> симуляции или продолжить</span></p><p>"
+                           "<span style=\" font-size:10pt;\"> с последнего хода?</span></p></body></html>")
         # если нажата одна из кнопок, вызываем соответсвующий метод родителя(MainWindow). А как открывается и
         # отображается файл, решается уже там.
         self.look_btn.setText("Просмотреть")
@@ -49,9 +49,10 @@ class SimulationHistoryWindow(QDialog):
         self.setGeometry(500, 220, 750, 650)
         self.setWindowTitle('История симуляции')
         self.setFixedSize(900, 650)
-        self.setModal(True) # делаем так, чтобы нельзя было трогать другие окна, пока не закроем это.
+        self.setModal(True)  # делаем так, чтобы нельзя было трогать другие окна, пока не закроем это.
         self.history = history
-        # устанавливаем всем клеткам показ "Команды". Это нужно для того, чтобы когда в процессе симуляции показ изменялся,
+        # устанавливаем всем клеткам показ "Команды". Это нужно для того,
+        # чтобы когда в процессе симуляции показ изменялся,
         # он не влиял на историю
         for frame in self.history:
             for line in frame.get_map():
@@ -68,7 +69,7 @@ class SimulationHistoryWindow(QDialog):
         self.comboBox.currentTextChanged.connect(self.switch_color)
         self.show_mode = 0
         self.slider = QtWidgets.QSlider(self)
-        self.slider.setOrientation(1) # горизонтальное отображение
+        self.slider.setOrientation(QtCore.Qt.Horizontal)  # горизонтальное отображение
         self.slider.setGeometry(305, 610, 585, 40)
         self.slider.setMinimum(0)
         self.slider.setMaximum(len(self.history) - 1)

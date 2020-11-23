@@ -10,4 +10,3 @@ MINERAL_ENERGY = 100
 CELL_AGE = 200
 
 START_GENERATION = 1000  # начальное количество бактерий
-

@@ -26,10 +26,12 @@ class NeuralNetwork:
         # преобразуем вход в правильный вид
         inputs = np.array(inputs_list, ndmin=2).T
         # по сути, все, что мы делаем дальше это перемножаем матрицы весов и результата, полученного на прошлом слое.
-        # так, мы умножаем матрицу весов и входные данные, подвергаем функции активации, получаем новые данные, повторяем.
+        # так, мы умножаем матрицу весов и входные данные, подвергаем функции активации, получаем новые данные,
+        # повторяем.
         # функция активации - relu, выражается как np.maximum(0, layer). relu для примера, ее можно легко изменить
         # на любую другую.
-        # P.S я понимаю, что relu ни на что не влияет, так как у меня нет отрицательных весов. сделал я так для того, чтобы ее при необходимости можно было
+        # P.S я понимаю, что relu ни на что не влияет, так как у меня нет отрицательных весов. сделал я так для того,
+        # чтобы ее при необходимости можно было
         # легко заменить на любую другую. Да и тем более, мне понравилось как бактерии ведут себя при relu =)
         # и еще, тут нельзя использовать функции, которые создаются в других функциях из-за pickle. Если нужно сделать
         # функцию активации, то только глобальную
@@ -87,7 +89,7 @@ class BaseCell:
     def set_y(self, y):
         self.y = y
 
-    def update(self, map, i, j, sun_map):
+    def update(self, newmap, i, j, sun_map):
         return i, j, False
 
     def set_updated(self, flag: bool):
@@ -154,7 +156,7 @@ class Bacteria(BaseCell):
             # может быть ничего, край карты, союзная клетка, чужая клетка. минералы считаются чужими клетками.
             # ничего - 0, край - 1, союзник - 2, противник - 3
             # копипаст, но ниче другого не сделаешь.
-            if i - 1 < 0: # если сверху край
+            if i - 1 < 0:  # если сверху край
                 whats_around[0][1] = 1
             else:
                 up = map1[i - 1][j]
@@ -169,6 +171,9 @@ class Bacteria(BaseCell):
                     # получаем результаты от двух нейронок. если они одинаковые, то и клетки к одному роду принадлежат
                     res1 = self.net.activate(test_data)
                     res2 = up.net.activate(test_data)
+                    # сравнение numpy массивов сравнивает каждый элемент на одинаковых позициях, поэтому возвращает еще
+                    # один массив, где элементы либо True, либо False
+                    # если ответы совпали, то клетка своя.
                     if all(res1 == res2):
                         whats_around[0][3] = 1
                     else:
@@ -186,6 +191,9 @@ class Bacteria(BaseCell):
                     test_data = [uniform(0, 1) for _ in range(21)]
                     res1 = self.net.activate(test_data)
                     res2 = down.net.activate(test_data)
+                    # сравнение numpy массивов сравнивает каждый элемент на одинаковых позициях, поэтому возвращает еще
+                    # один массив, где элементы либо True, либо False
+                    # если ответы совпали, то клетка своя.
                     if all(res1 == res2):
                         whats_around[1][3] = 1
                     else:
@@ -203,6 +211,9 @@ class Bacteria(BaseCell):
                     test_data = [uniform(0, 1) for _ in range(21)]
                     res1 = self.net.activate(test_data)
                     res2 = right.net.activate(test_data)
+                    # сравнение numpy массивов сравнивает каждый элемент на одинаковых позициях, поэтому возвращает еще
+                    # один массив, где элементы либо True, либо False
+                    # если ответы совпали, то клетка своя.
                     if all(res1 == res2):
                         whats_around[2][3] = 1
                     else:
@@ -220,6 +231,9 @@ class Bacteria(BaseCell):
                     test_data = [uniform(0, 1) for _ in range(21)]
                     res1 = self.net.activate(test_data)
                     res2 = left.net.activate(test_data)
+                    # сравнение numpy массивов сравнивает каждый элемент на одинаковых позициях, поэтому возвращает еще
+                    # один массив, где элементы либо True, либо False
+                    # если ответы совпали, то клетка своя.
                     if all(res1 == res2):
                         whats_around[3][3] = 1
                     else:
@@ -342,8 +356,8 @@ class Mineral(BaseCell):
                 new_i += 1
             #  если в предполагаемой координате никого нет, то можем двигаться
             if map1[new_i][new_j].name == 'BaseCell':
-                self.x = 300 + new_j * CELL_SIZE # 300 прибавляем для того, чтобы сделать отступ от левой части экрана
-                self.y = new_i * CELL_SIZE # и клетки отрисовывались за чертой
+                self.x = 300 + new_j * CELL_SIZE  # 300 прибавляем для того, чтобы сделать отступ от левой части экрана
+                self.y = new_i * CELL_SIZE  # и клетки отрисовывались за чертой
                 return new_i, new_j, False
         return i, j, False
 
@@ -386,7 +400,7 @@ class Map:
                     new_map[i][j] = BaseCell(cell.x, cell.y, WHITE)
                     new_map[new_i][new_j] = cell
                 else:
-                    if new_map[new_i][new_j].name == 'Bacteria': # если бактерию съели, добавляем к статистике
+                    if new_map[new_i][new_j].name == 'Bacteria':  # если бактерию съели, добавляем к статистике
                         self.statistics[7] += 1
                     new_map[new_i][new_j] = BaseCell(cell.x, cell.y, WHITE)
 
@@ -479,8 +493,8 @@ class Map:
     def get_map(self):
         return self.map_main[:]
 
-    def set_map(self, map):
-        self.map_main = map
+    def set_map(self, newmap):
+        self.map_main = newmap
 
     def get_age(self):
         return self.age
