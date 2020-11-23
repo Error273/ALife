@@ -1,6 +1,6 @@
 from constants import *
 from random import randint, uniform
-import numpy
+import numpy as np
 
 
 class NeuralNetwork:
@@ -14,30 +14,33 @@ class NeuralNetwork:
         self.hnodes2 = hiddennodes2
         # выходной
         self.onodes = outputnodes
-        # веса вход - первый скрытый слой
-        self.wih1 = numpy.random.rand(self.hnodes1, self.inodes)
-        # веса первый скрытый - второй скрытый
-        self.wh1h2 = numpy.random.rand(self.hnodes2, self.hnodes1)
-        # веса второй скрытый - выход
-        self.wh2o = numpy.random.rand(self.onodes, self.hnodes2)
+        # веса вход - первый скрытый слой + веса для нейрона смещения
+        # добавляем веса нейрона смещения только на одном слое, так как нейроны смещения соседних слоев не соединяются
+        self.wih1 = np.random.rand(self.hnodes1, self.inodes + 1)
+        # веса первый скрытый - второй скрытый + веса для нейрона смещения
+        self.wh1h2 = np.random.rand(self.hnodes2, self.hnodes1 + 1)
+        # веса второй скрытый - выход + веса для нейрона смещения
+        self.wh2o = np.random.rand(self.onodes, self.hnodes2 + 1)
 
     def activate(self, inputs_list):
         # преобразуем вход в правильный вид
-        inputs = numpy.array(inputs_list, ndmin=2).T
+        inputs = np.array(inputs_list, ndmin=2).T
         # по сути, все, что мы делаем дальше это перемножаем матрицы весов и результата, полученного на прошлом слое.
         # так, мы умножаем матрицу весов и входные данные, подвергаем функции активации, получаем новые данные, повторяем.
-        # функция активации - relu, выражается как numpy.maximum(0, layer). relu для примера, ее можно легко изменить
+        # функция активации - relu, выражается как np.maximum(0, layer). relu для примера, ее можно легко изменить
         # на любую другую.
         # P.S я понимаю, что relu ни на что не влияет, так как у меня нет отрицательных весов. сделал я так для того, чтобы ее при необходимости можно было
         # легко заменить на любую другую. Да и тем более, мне понравилось как бактерии ведут себя при relu =)
         # и еще, тут нельзя использовать функции, которые создаются в других функциях из-за pickle. Если нужно сделать
         # функцию активации, то только глобальную
-        hidden_inputs1 = numpy.dot(self.wih1, inputs)
-        hidden_outputs1 = numpy.maximum(0, hidden_inputs1)
-        hidden_inputs2 = numpy.dot(self.wh1h2, hidden_outputs1)
-        hidden_outputs2 = numpy.maximum(0, hidden_inputs2)
-        final_inputs = numpy.dot(self.wh2o, hidden_outputs2)
-        final_outputs = numpy.maximum(0, final_inputs)
+
+        # перед тем, как перемножить, мы добавляем к входному слою 1 - нейрон смещения.
+        hidden_inputs1 = np.dot(self.wih1, np.append(inputs, 1))
+        hidden_outputs1 = np.maximum(0, hidden_inputs1)
+        hidden_inputs2 = np.dot(self.wh1h2, np.append(hidden_outputs1, 1))
+        hidden_outputs2 = np.maximum(0, hidden_inputs2)
+        final_inputs = np.dot(self.wh2o, np.append(hidden_outputs2, 1))
+        final_outputs = np.maximum(0, final_inputs)
         return final_outputs
 
     def get_weights(self):
@@ -47,6 +50,9 @@ class NeuralNetwork:
         self.wih1 = wih1
         self.wh1h2 = wh1h2
         self.wh2o = wh2o
+
+    def get_nodes(self):
+        return self.inodes, self.hnodes1, self.hnodes2, self.onodes
 
 
 class BaseCell:
@@ -280,6 +286,8 @@ class Bacteria(BaseCell):
         # получаем веса
         new_wih1, new_wh1h2, new_wh2o = self.net.get_weights()
         new_wih1, new_wh1h2, new_wh2o = new_wih1.flatten(), new_wh1h2.flatten(), new_wh2o.flatten()
+        # получем количество нейронов
+        inodes, hnodes1, hnodes2, onodes = self.net.get_nodes()
         # проходимся по каждому весу и изменяем его на случайное число, если мутируем.
         for i in range(len(new_wih1)):
             if randint(0, 100) < mutate_chance:
@@ -291,8 +299,8 @@ class Bacteria(BaseCell):
             if randint(0, 100) < mutate_chance:
                 new_wh2o[i] = uniform(0, 1)
         # возвращаем веса в нормальный вид и устанавливаем нейронке.
-        self.net.set_weights(numpy.reshape(new_wih1, (19, 21)), numpy.reshape(new_wh1h2, (19, 19)),
-                             numpy.reshape(new_wh2o, (7, 19)))
+        self.net.set_weights(np.reshape(new_wih1, (hnodes1, inodes + 1)), np.reshape(new_wh1h2, (hnodes2, hnodes1 + 1)),
+                             np.reshape(new_wh2o, (onodes, hnodes2 + 1)))
 
     def get_i_j_by_orientation(self, map1, i, j):
         # функция для того, чтобы получить координаты того, что находится перед собой.
