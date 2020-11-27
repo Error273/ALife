@@ -104,7 +104,7 @@ class SimulationHistoryWindow(QDialog):
         self.update()
 
 
-class ChooseSimulationName(QDialog):
+class ChooseSimulationNameDialog(QDialog):
     def __init__(self, parent):
         super().__init__(parent, QtCore.Qt.Window)
         self.setGeometry(600, 300, 300, 100)
@@ -187,12 +187,16 @@ class StatiscticsViewWindow(QDialog):
             SELECT data_id FROM saves WHERE datetime = ?)""", [date]).fetchall()
             self.statistics_table.setColumnCount(len(res[0]))
             self.statistics_table.setRowCount(len(res))
-            column_names = self.cur.execute("SELECT name FROM PRAGMA_TABLE_INFO('data')").fetchall()
-            column_names = list(map(lambda x: x[0], column_names))
-            self.statistics_table.setHorizontalHeaderLabels(column_names)
+            print(len(res[0]))
+            self.statistics_table.setHorizontalHeaderLabels(['id', 'data_id', 'Возраст',
+                                                             'Настройка минералов', 'Настройка солнца', 'Шанс мутации',
+                                                             'Кол-во бактерии', 'Кол-во минералов', 'Кол-во рожденных',
+                                                             'Кол-во умерших', 'Кол-во солнцеедов', 'Кол-во мясоедных',
+                                                             'Кол-во минералоедов', 'Кол-во съеденных'])
             for i, elem in enumerate(res):
                 for j, val in enumerate(elem):
                     self.statistics_table.setItem(i, j, QtWidgets.QTableWidgetItem(str(val)))
                     item = self.statistics_table.item(i, j)
+                    # устанавливаем 2 флага - первый не дает редактировать клетку, второй дает ее выделять
                     item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
             self.statistics_table.resizeColumnsToContents()

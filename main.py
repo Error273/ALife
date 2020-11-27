@@ -192,7 +192,7 @@ class Window(QMainWindow):
         """ когда мы нажимаем кнопку сохранения, Открывается диалог с выбором названия.
             после этого мы вызываем метод save_stats и передаем название сохранения
         """
-        ChooseSimulationName(self)
+        ChooseSimulationNameDialog(self)
 
     def save_stats(self, name):
         """ для сохранений статистики имеем бд statistics.db. в ней 2 таблицы.
@@ -202,7 +202,7 @@ class Window(QMainWindow):
         db = sqlite3.connect('statistics.db')
         cur = db.cursor()
         data_id = randint(0, 99999)
-        # отрезаем от datetime 19 символов, так это миллисекунды
+        # отрезаем от datetime 19 символов, так это отсавшееся это миллисекунды
         cur.execute("INSERT INTO saves(name, datetime, data_id) VALUES (?, ?, ?)", [name,
                                                                                     datetime.isoformat(datetime.now(),
                                                                                                        sep=' ')[0:19],
